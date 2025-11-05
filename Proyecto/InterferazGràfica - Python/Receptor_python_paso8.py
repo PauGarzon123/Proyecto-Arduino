@@ -1,21 +1,33 @@
 from tkinter import *
 import serial, time, matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import pygame  # para reproducir audio
 
-device = 'COM5' 
+device = 'COM7'
 BAUDRATE = 9600
 mySerial = serial.Serial(device, BAUDRATE, timeout=1)
 time.sleep(2)
 print(f"Conectado al receptor ({device})")
 
+pygame.mixer.init()
+SONIDO_FALLO = "alerta_fallo.mp3"   # tu archivo de sonido
+
 temperaturas, humedades, tiempo = [], [], []
 j = 0
 grafica_iniciada = False
+
+def reproducir_fallo():
+    try:
+        pygame.mixer.music.load(SONIDO_FALLO)
+        pygame.mixer.music.play()
+    except Exception as e:
+        print("Error al reproducir el sonido:", e)
 
 def EntrarClick():
     print("Has introducido:", fraseEntry.get())
 
 def AClick():
-    print("Iniciando gráfica...")
+    print("Iniciando gráfica embebida...")
     iniciar_grafica()
 
 def BClick():
@@ -27,30 +39,41 @@ def CClick():
     mySerial.write(b"START\n")
 
 def DClick():
-    print("Botón D presionado.")
+    print("⚠️ Alarma manual activada")
+    reproducir_fallo()
 
 def iniciar_grafica():
-    global fig, ax, linea_temp, linea_hum, grafica_iniciada
+    global fig, ax, linea_temp, linea_hum, grafica_iniciada, canvas
     if grafica_iniciada:
         return
     grafica_iniciada = True
-    plt.ion()
-    fig, ax = plt.subplots()
+
+    fig, ax = plt.subplots(figsize=(4, 3))
     linea_temp, = ax.plot([], [], 'r', label='Temperatura (ºC)')
     linea_hum, = ax.plot([], [], 'b', label='Humedad (%)')
     ax.set_ylim(20, 100)
     ax.legend()
     ax.set_xlim(0, 100)
+    ax.set_title("Lectura de datos DHT")
+
+    canvas = FigureCanvasTkAgg(fig, master=frame_grafica)
+    canvas.draw()
+    canvas.get_tk_widget().pack(fill=BOTH, expand=True)
+
     actualizar_grafica()
 
 def actualizar_grafica():
     global j
-    if not plt.fignum_exists(fig.number):
+    if not grafica_iniciada:
         return
 
     if mySerial.in_waiting > 0:
         linea = mySerial.readline().decode('utf-8', errors='ignore').strip()
-        if linea.startswith("T:"):
+
+        if linea == "Fallo":
+            print("⚠️ Aviso de fallo recibido")
+            reproducir_fallo()
+        elif linea.startswith("T:"):
             try:
                 t, h = map(float, linea.replace("T:", "").split(":"))
                 temperaturas.append(t)
@@ -62,17 +85,15 @@ def actualizar_grafica():
                     ax.set_xlim(0, 100)
                 else:
                     ax.set_xlim(j - 75, j + 25)
-                plt.title(f"Lectura #{j}")
-                plt.draw()
-                plt.pause(0.01)
+                ax.set_title(f"Lectura #{j}")
+                canvas.draw()
                 j += 1
             except Exception as e:
                 print("Error:", e)
     window.after(100, actualizar_grafica)
 
-# Interfaz gráfica
 window = Tk()
-window.geometry("400x400")
+window.geometry("800x500")
 window.title("Control Serial (Emisor-Receptor)")
 
 tituloLabel = Label(window, text="Interfaz Arduino", font=("Courier", 20, "italic"))
@@ -93,7 +114,15 @@ BButton.grid(row=2, column=1, padx=5, pady=5, sticky="nsew")
 CButton = Button(window, text="INICIAR TRANSMISIÓN", bg='green', fg="white", command=CClick)
 CButton.grid(row=2, column=2, padx=5, pady=5, sticky="nsew")
 
-DButton = Button(window, text="D", bg='black', fg="white", command=DClick)
+DButton = Button(window, text="ACTIVAR ALARMA", bg='red', fg="white", command=DClick)
 DButton.grid(row=2, column=3, padx=5, pady=5, sticky="nsew")
+
+frame_grafica = Frame(window, bg="white", relief="sunken", bd=2)
+frame_grafica.grid(row=3, column=0, columnspan=4, padx=10, pady=10, sticky="nsew")
+
+for i in range(4):
+    window.columnconfigure(i, weight=1)
+for i in range(4):
+    window.rowconfigure(i, weight=1)
 
 window.mainloop()
