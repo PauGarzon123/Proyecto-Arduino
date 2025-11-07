@@ -2,7 +2,7 @@ from tkinter import *
 import serial, time, matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pygame  # para reproducir audio
-
+# comentario
 device = 'COM7'
 BAUDRATE = 9600
 mySerial = serial.Serial(device, BAUDRATE, timeout=1)
