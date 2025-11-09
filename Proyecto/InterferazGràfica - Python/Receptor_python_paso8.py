@@ -2,7 +2,7 @@ from tkinter import *
 import serial, time, matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pygame  # para reproducir audio
-# comentario
+
 device = 'COM7'
 BAUDRATE = 9600
 mySerial = serial.Serial(device, BAUDRATE, timeout=1)
@@ -26,19 +26,19 @@ def reproducir_fallo():
 def EntrarClick():
     print("Has introducido:", fraseEntry.get())
 
-def AClick():
+def IniciarGraficaClick():
     print("Iniciando gráfica embebida...")
     iniciar_grafica()
 
-def BClick():
+def PararTransmisionGraficaClick():
     print("STOP")
-    mySerial.write(b"STOP\n")
+    mySerial.write(b"1:\n")
 
-def CClick():
+def IniciarTransmisionGraficaClick():
     print("START")
-    mySerial.write(b"START\n")
+    mySerial.write(b"2:\n")
 
-def DClick():
+def ActivarAlarmaClick():
     print("⚠️ Alarma manual activada")
     reproducir_fallo()
 
@@ -105,17 +105,17 @@ fraseEntry.grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky="nsew")
 EntrarButton = Button(window, text="Entrar", bg='red', fg="white", command=EntrarClick)
 EntrarButton.grid(row=1, column=3, padx=5, pady=5, sticky="nsew")
 
-AButton = Button(window, text="INICIAR GRAFICA", bg='black', fg="white", command=AClick)
-AButton.grid(row=2, column=0, padx=5, pady=5, sticky="nsew")
+IniciarGraficaButton = Button(window, text="INICIAR GRAFICA", bg='black', fg="white", command=IniciarGraficaClick)
+IniciarGraficaButton.grid(row=2, column=0, padx=5, pady=5, sticky="nsew")
 
-BButton = Button(window, text="PARAR TRANSMISIÓN", bg='orange', fg="white", command=BClick)
-BButton.grid(row=2, column=1, padx=5, pady=5, sticky="nsew")
+PararTransmisionGraficaButton = Button(window, text="PARAR TRANSMISIÓN", bg='orange', fg="white", command=PararTransmisionGraficaClick)
+PararTransmisionGraficaButton.grid(row=2, column=1, padx=5, pady=5, sticky="nsew")
 
-CButton = Button(window, text="INICIAR TRANSMISIÓN", bg='green', fg="white", command=CClick)
-CButton.grid(row=2, column=2, padx=5, pady=5, sticky="nsew")
+IniciarTransmisionGraficaButton = Button(window, text="INICIAR TRANSMISIÓN", bg='green', fg="white", command=IniciarTransmisionGraficaClick)
+IniciarTransmisionGraficaButton.grid(row=2, column=2, padx=5, pady=5, sticky="nsew")
 
-DButton = Button(window, text="ACTIVAR ALARMA", bg='red', fg="white", command=DClick)
-DButton.grid(row=2, column=3, padx=5, pady=5, sticky="nsew")
+ActivarAlarmaButton = Button(window, text="ACTIVAR ALARMA", bg='red', fg="white", command=ActivarAlarmaClick)
+ActivarAlarmaButton.grid(row=2, column=3, padx=5, pady=5, sticky="nsew")
 
 frame_grafica = Frame(window, bg="white", relief="sunken", bd=2)
 frame_grafica.grid(row=3, column=0, columnspan=4, padx=10, pady=10, sticky="nsew")

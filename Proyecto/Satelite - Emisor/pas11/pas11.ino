@@ -22,14 +22,21 @@ void setup() {
 }
 
 void loop() {
+  //Leer los posibles mensajes que lleguen de la estación tierra
+  //Extraer el codigo
   if (enlace.available() > 0) {
     String cmd = enlace.readStringUntil('\n');
     cmd.trim();
-    if (cmd.equalsIgnoreCase("STOP")) {
+    int fin=cmd.indexOf(':',0); 
+    int codigo = cmd.substring(0, fin).toInt(); 
+    int inicio = fin+1;
+
+  //Depende del codigo, hacer diferentes cosas
+    if (codigo == 1) {
       transmitir = false;
       enlace.println("Transmisión detenida en emisor.");
     } 
-    else if (cmd.equalsIgnoreCase("START")) {
+    else if (codigo == 2) {
       transmitir = true;
       enlace.println("Transmisión reanudada en emisor.");
     }
@@ -45,7 +52,7 @@ void loop() {
     if (!isnan(h) && !isnan(t)) {
       ultimoDatoOK = millis();  
       digitalWrite(led1, HIGH);
-      enlace.print("T:");
+      enlace.print("1:");
       enlace.print(t);
       enlace.print(":");
       enlace.println(h);
@@ -54,9 +61,9 @@ void loop() {
     }
   }
 
-  // si pasan más de 3 segundos sin lectura  que indique fallo
+  // si pasan más de 7 segundos sin lectura  que indique fallo
   if (transmitir && (millis() - ultimoDatoOK > timeoutFallo)) {
-    enlace.println("Fallo");
+    enlace.println("2:");
     ultimoDatoOK = millis();  // no enviar en bucle
   }
 }
