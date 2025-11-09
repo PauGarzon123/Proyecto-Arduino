@@ -69,13 +69,16 @@ def actualizar_grafica():
 
     if mySerial.in_waiting > 0:
         linea = mySerial.readline().decode('utf-8', errors='ignore').strip()
+        trozos = linea.split(":")
+        codigo = trozos[0]
 
-        if linea == "Fallo":
+        if codigo == "2":
             print("⚠️ Aviso de fallo recibido")
             reproducir_fallo()
-        elif linea.startswith("T:"):
+        elif codigo == "1":
             try:
-                t, h = map(float, linea.replace("T:", "").split(":"))
+                t = float(trozos[1])
+                h = float(trozos[2])
                 temperaturas.append(t)
                 humedades.append(h)
                 tiempo.append(j)
