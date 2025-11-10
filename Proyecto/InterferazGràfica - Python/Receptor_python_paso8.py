@@ -2,12 +2,25 @@ from tkinter import *
 import serial, time, matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pygame  # para reproducir audio
+import pyttsx3
+# Inicializar motor de voz
+voz_engine = pyttsx3.init()
+voz_engine.setProperty('rate', 160)   # velocidad de la voz
+voz_engine.setProperty('volume', 1)   # volumen máximo
+
+def hablar(texto):
+    try:
+        voz_engine.say(texto)
+        voz_engine.runAndWait()
+    except Exception as e:
+        print("Error al reproducir voz:", e)
 
 device = 'COM7'
 BAUDRATE = 9600
 mySerial = serial.Serial(device, BAUDRATE, timeout=1)
 time.sleep(2)
 print(f"Conectado al receptor ({device})")
+hablar(f"Conectado al receptor ({device})")
 
 pygame.mixer.init()
 SONIDO_FALLO = "caballo_homo.mp3"   # tu archivo de sonido
@@ -22,12 +35,14 @@ def reproducir_fallo():
         pygame.mixer.music.play()
     except Exception as e:
         print("Error al reproducir el sonido:", e)
+        hablar("Error al reproducir el sonido")
 
 def EntrarClick():
     print("Has introducido:", fraseEntry.get())
 
 def IniciarGraficaClick():
     print("Iniciando gráfica embebida...")
+    hablar("Iniciando gráfica embebida")
     iniciar_grafica()
 
 def PararTransmisionGraficaClick():
@@ -75,6 +90,7 @@ def actualizar_grafica():
         if codigo == "2":
             print("⚠️ Aviso de fallo recibido")
             reproducir_fallo()
+            hablar("Atención. Se ha detectado un fallo en el sistema.")
         elif codigo == "1":
             try:
                 t = float(trozos[1])
