@@ -10,7 +10,7 @@ time.sleep(2)
 print(f"Conectado al receptor ({device})")
 
 pygame.mixer.init()
-SONIDO_FALLO = "alerta_fallo.mp3"   # tu archivo de sonido
+SONIDO_FALLO = "caballo_homo.mp3"   # tu archivo de sonido
 
 temperaturas, humedades, tiempo = [], [], []
 j = 0
