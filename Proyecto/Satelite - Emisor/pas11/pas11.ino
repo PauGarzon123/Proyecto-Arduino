@@ -3,6 +3,8 @@
 
 #define DHTPIN 3
 #define DHTTYPE DHT11
+#define TRIG 4
+#define ECHO 5
 DHT dht(DHTPIN, DHTTYPE);
 
 SoftwareSerial enlace(10, 11);
@@ -11,7 +13,8 @@ const int led1 = 13;
 bool transmitir = true;
 bool hacermedias = true;
 unsigned long lastRead = 0; 
-unsigned long ultimoDatoOK = 0;   
+unsigned long ultimoDatoOKTempHum = 0;
+unsigned long ultimoDatoOKdist = 0;
 const unsigned long intervaloLectura = 3000;   // cada 3 s
 const unsigned long timeoutFallo = 7000;      
 int i = 0;
@@ -28,11 +31,27 @@ float valorlimiteH = 100;
 
 void setup() {
   pinMode(led1, OUTPUT);
+  pinMode(TRIG,OUTPUT);
+  pinMode(ECHO,INPUT);
   enlace.begin(9600);
   dht.begin();
   enlace.println("Emisor listo. Esperando comandos START/STOP...");
 }
+float medirDistancia() {
+  digitalWrite(TRIG, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG, LOW);
 
+
+  long duracion = pulseIn(ECHO, HIGH, 30000); // timeout de 30 ms
+  if (duracion == 0) {
+    return NAN; // sin eco
+  }
+  float distancia = duracion * 0.0343 / 2;
+  return distancia;
+}
 void loop() {
   //Leer los posibles mensajes que lleguen de la estación tierra
   //Extraer el codigo
@@ -77,14 +96,24 @@ void loop() {
 
     float h = dht.readHumidity();
     float t = dht.readTemperature();
+    float d = medirDistancia();
 
     if (!isnan(h) && !isnan(t)) {
-      ultimoDatoOK = millis();  
+      ultimoDatoOKTempHum = millis();
       digitalWrite(led1, HIGH);
       enlace.print("1:");
       enlace.print(t);
       enlace.print(":");
       enlace.println(h);
+      delay(50);
+      digitalWrite(led1, LOW);
+    }
+
+    if(!isnan(d)){
+      ultimoDatoOKdist = millis();
+      digitalWrite(led1, HIGH);
+      enlace.print("3:");
+      enlace.print(d);
       delay(200);
       digitalWrite(led1, LOW);
       
@@ -130,8 +159,13 @@ void loop() {
 
 
   // si pasan más de 7 segundos sin lectura  que indique fallo
-  if (transmitir && (millis() - ultimoDatoOK > timeoutFallo)) {
+  if (transmitir && (millis() - ultimoDatoOKTempHum > timeoutFallo)) {
     enlace.println("2:");
-    ultimoDatoOK = millis();  // no enviar en bucle
+    ultimoDatoOKTempHum = millis();  // no enviar en bucle
   }
+  if (transmitir && (millis() - ultimoDatoOKdist > timeoutFallo)) {
+    enlace.println("4:");
+    ultimoDatoOKdist = millis(); // no enviar en bucle
+  }
+
 }
