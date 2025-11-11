@@ -9,10 +9,22 @@ SoftwareSerial enlace(10, 11);
 const int led1 = 13;
 
 bool transmitir = true;
+bool hacermedias = true;
 unsigned long lastRead = 0; 
 unsigned long ultimoDatoOK = 0;   
 const unsigned long intervaloLectura = 3000;   // cada 3 s
 const unsigned long timeoutFallo = 7000;      
+int i = 0;
+int jT = 0;
+int jH = 0;
+float sumaT = 0;
+float mediaT = 0;
+float sumaH = 0;
+float mediaH = 0;
+float valorlimiteT = 100;
+float valorlimiteH = 100;
+
+
 
 void setup() {
   pinMode(led1, OUTPUT);
@@ -40,6 +52,23 @@ void loop() {
       transmitir = true;
       enlace.println("Transmisión reanudada en emisor.");
     }
+    else if (codigo == 10) {
+      hacermedias = true;
+    }
+    else if (codigo == 11) {
+      hacermedias = false;
+      sumaT = 0;
+      sumaH = 0;
+      i = 0;
+      mediaT = 0;
+      mediaH = 0;
+    }
+    else if (codigo == 12) {
+      fin=cmd.indexOf(':',inicio);
+      valorlimiteT = cmd.substring(inicio, fin).toFloat();
+      inicio = fin +1;
+      valorlimiteH = cmd.substring(inicio).toFloat();
+    }
   }
 
   // lectura del sensor cada 3 segundos
@@ -58,8 +87,47 @@ void loop() {
       enlace.println(h);
       delay(200);
       digitalWrite(led1, LOW);
+      
+      if(hacermedias == true){
+        sumaT = sumaT + t;
+        sumaH = sumaH + h;
+      
+        i = i+1;
+      }
+      
     }
   }
+
+  if (i >=10 && hacermedias == true){
+    mediaT = sumaT/10;
+    mediaH = sumaH/10;
+    enlace.print("5:");
+    enlace.print(mediaT);
+    enlace.print(":");
+    enlace.println(mediaH);
+    i = 0;
+    sumaT = 0;
+    sumaH = 0;
+
+  // Codigo para ver si hay tres medias consecutivas mas grandes que un limite introducido por el usuario
+    if(mediaT >= valorlimiteT){
+      jT = jT+1;
+      if(jT >=3)
+        enlace.println("6:");
+    }else
+      jT = 0;
+  
+
+     if(mediaH >= valorlimiteH){
+      jH = jH+1;
+      if(jH >=3)
+        enlace.println("6:");
+    }else
+      jH = 0; 
+  }
+
+  
+
 
   // si pasan más de 7 segundos sin lectura  que indique fallo
   if (transmitir && (millis() - ultimoDatoOK > timeoutFallo)) {
