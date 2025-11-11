@@ -3,35 +3,90 @@
 
 #define DHTPIN 3
 #define DHTTYPE DHT11
+#define TRIG 4
+#define ECHO 5
 DHT dht(DHTPIN, DHTTYPE);
 
 SoftwareSerial enlace(10, 11);
 const int led1 = 13;
 
 bool transmitir = true;
+bool hacermedias = true;
 unsigned long lastRead = 0; 
-unsigned long ultimoDatoOK = 0;   
+unsigned long ultimoDatoOKTempHum = 0;
+unsigned long ultimoDatoOKdist = 0;
 const unsigned long intervaloLectura = 3000;   // cada 3 s
 const unsigned long timeoutFallo = 7000;      
+int i = 0;
+int jT = 0;
+int jH = 0;
+float sumaT = 0;
+float mediaT = 0;
+float sumaH = 0;
+float mediaH = 0;
+float valorlimiteT = 100;
+float valorlimiteH = 100;
+
+
 
 void setup() {
   pinMode(led1, OUTPUT);
+  pinMode(TRIG,OUTPUT);
+  pinMode(ECHO,INPUT);
   enlace.begin(9600);
   dht.begin();
   enlace.println("Emisor listo. Esperando comandos START/STOP...");
 }
+float medirDistancia() {
+  digitalWrite(TRIG, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG, LOW);
 
+
+  long duracion = pulseIn(ECHO, HIGH, 30000); // timeout de 30 ms
+  if (duracion == 0) {
+    return NAN; // sin eco
+  }
+  float distancia = duracion * 0.0343 / 2;
+  return distancia;
+}
 void loop() {
+  //Leer los posibles mensajes que lleguen de la estación tierra
+  //Extraer el codigo
   if (enlace.available() > 0) {
     String cmd = enlace.readStringUntil('\n');
     cmd.trim();
-    if (cmd.equalsIgnoreCase("STOP")) {
+    int fin=cmd.indexOf(':',0); 
+    int codigo = cmd.substring(0, fin).toInt(); 
+    int inicio = fin+1;
+
+  //Depende del codigo, hacer diferentes cosas
+    if (codigo == 1) {
       transmitir = false;
       enlace.println("Transmisión detenida en emisor.");
     } 
-    else if (cmd.equalsIgnoreCase("START")) {
+    else if (codigo == 2) {
       transmitir = true;
       enlace.println("Transmisión reanudada en emisor.");
+    }
+    else if (codigo == 10) {
+      hacermedias = true;
+    }
+    else if (codigo == 11) {
+      hacermedias = false;
+      sumaT = 0;
+      sumaH = 0;
+      i = 0;
+      mediaT = 0;
+      mediaH = 0;
+    }
+    else if (codigo == 12) {
+      fin=cmd.indexOf(':',inicio);
+      valorlimiteT = cmd.substring(inicio, fin).toFloat();
+      inicio = fin +1;
+      valorlimiteH = cmd.substring(inicio).toFloat();
     }
   }
 
@@ -41,22 +96,76 @@ void loop() {
 
     float h = dht.readHumidity();
     float t = dht.readTemperature();
+    float d = medirDistancia();
 
     if (!isnan(h) && !isnan(t)) {
-      ultimoDatoOK = millis();  
+      ultimoDatoOKTempHum = millis();
       digitalWrite(led1, HIGH);
-      enlace.print("T:");
+      enlace.print("1:");
       enlace.print(t);
       enlace.print(":");
       enlace.println(h);
+      delay(50);
+      digitalWrite(led1, LOW);
+       if(hacermedias == true){
+        sumaT = sumaT + t;
+        sumaH = sumaH + h;
+      
+        i = i+1;
+      }
+    }
+
+    if(!isnan(d)){
+      ultimoDatoOKdist = millis();
+      digitalWrite(led1, HIGH);
+      enlace.print("3:");
+      enlace.print(d);
       delay(200);
       digitalWrite(led1, LOW);
+      
     }
   }
 
-  // si pasan más de 3 segundos sin lectura  que indique fallo
-  if (transmitir && (millis() - ultimoDatoOK > timeoutFallo)) {
-    enlace.println("Fallo");
-    ultimoDatoOK = millis();  // no enviar en bucle
+
+  if (i >=10 && hacermedias == true){
+    mediaT = sumaT/10;
+    mediaH = sumaH/10;
+    enlace.print("5:");
+    enlace.print(mediaT);
+    enlace.print(":");
+    enlace.println(mediaH);
+    i = 0;
+    sumaT = 0;
+    sumaH = 0;
+
+  // Codigo para ver si hay tres medias consecutivas mas grandes que un limite introducido por el usuario
+    if(mediaT >= valorlimiteT){
+      jT = jT+1;
+      if(jT >=3)
+        enlace.println("6:");
+    }else
+      jT = 0;
+  
+
+     if(mediaH >= valorlimiteH){
+      jH = jH+1;
+      if(jH >=3)
+        enlace.println("6:");
+    }else
+      jH = 0; 
   }
+
+  
+
+
+  // si pasan más de 7 segundos sin lectura  que indique fallo
+  if (transmitir && (millis() - ultimoDatoOKTempHum > timeoutFallo)) {
+    enlace.println("2:");
+    ultimoDatoOKTempHum = millis();  // no enviar en bucle
+  }
+  if (transmitir && (millis() - ultimoDatoOKdist > timeoutFallo)) {
+    enlace.println("4:");
+    ultimoDatoOKdist = millis(); // no enviar en bucle
+  }
+
 }
