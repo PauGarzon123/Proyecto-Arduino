@@ -21,7 +21,7 @@ void loop() {
       Serial.println("Error a leer el sensor DHT11");
    }
    else {
-      Serial.println("El sensor da datos correctos")
+      Serial.println("El sensor da datos correctos");
 
    }
 
