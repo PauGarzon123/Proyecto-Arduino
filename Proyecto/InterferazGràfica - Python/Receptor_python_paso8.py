@@ -1,28 +1,11 @@
 from tkinter import *
 import serial, time, matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-<<<<<<< HEAD
 import pygame
-=======
-import pygame  # para reproducir audio
-import pyttsx3
-# Inicializar motor de voz
-voz_engine = pyttsx3.init()
-voz_engine.setProperty('rate', 160)   # velocidad de la voz
-voz_engine.setProperty('volume', 1)   # volumen máximo
-
-def hablar(texto):
-    try:
-        voz_engine.say(texto)
-        voz_engine.runAndWait()
-    except Exception as e:
-        print("Error al reproducir voz:", e)
->>>>>>> 8377d309a02169e76715dd6afb8791a22fd276c8
 
 # ==== CONFIGURACIÓN SERIAL ====
 device = 'COM6'
 BAUDRATE = 9600
-<<<<<<< HEAD
 try:
     mySerial = serial.Serial(device, BAUDRATE, timeout=1)
     time.sleep(2)
@@ -30,20 +13,10 @@ try:
 except Exception as e:
     print("⚠️ Error al conectar al puerto serie:", e)
     mySerial = None
-=======
-mySerial = serial.Serial(device, BAUDRATE, timeout=1)
-time.sleep(2)
-print(f"Conectado al receptor ({device})")
-hablar(f"Conectado al receptor ({device})")
->>>>>>> 8377d309a02169e76715dd6afb8791a22fd276c8
 
 # ==== CONFIGURACIÓN AUDIO ====
 pygame.mixer.init()
-<<<<<<< HEAD
 SONIDO_FALLO = "alerta_fallo.mp3"
-=======
-SONIDO_FALLO = "caballo_homo.mp3"   # tu archivo de sonido
->>>>>>> 8377d309a02169e76715dd6afb8791a22fd276c8
 
 # ==== VARIABLES GLOBALES ====
 temperaturas, humedades, tiempo = [], [], []
@@ -59,7 +32,6 @@ def reproducir_fallo():
         pygame.mixer.music.play()
     except Exception as e:
         print("Error al reproducir el sonido:", e)
-        hablar("Error al reproducir el sonido")
 
 def mostrar_menu_principal():
     limpiar_ventana()
@@ -69,7 +41,6 @@ def mostrar_menu_principal():
     Button(window, text="🚶 Sensor de Movimiento", font=("Arial", 16, "bold"),
            bg='lightgreen', command=lambda: print("Sensor movimiento (pendiente)")).pack(pady=20, ipadx=10, ipady=10)
 
-<<<<<<< HEAD
 def limpiar_ventana():
     for widget in window.winfo_children():
         widget.destroy()
@@ -84,24 +55,6 @@ def mostrar_interfaz_temp_hum():
     # Frame que contendrá las dos gráficas
     frame_grafica = Frame(window, bg="white", relief="sunken", bd=2)
     frame_grafica.grid(row=1, column=0, columnspan=4, padx=10, pady=10, sticky="nsew")
-=======
-def IniciarGraficaClick():
-    print("Iniciando gráfica embebida...")
-    hablar("Iniciando gráfica embebida")
-    iniciar_grafica()
-
-def PararTransmisionGraficaClick():
-    print("STOP")
-    mySerial.write(b"1:\n")
-
-def IniciarTransmisionGraficaClick():
-    print("START")
-    mySerial.write(b"2:\n")
-
-def ActivarAlarmaClick():
-    print("⚠️ Alarma manual activada")
-    reproducir_fallo()
->>>>>>> 8377d309a02169e76715dd6afb8791a22fd276c8
 
     # ==== FIGURA CON DOS GRÁFICAS LADO A LADO ====
     fig, (ax, ax2) = plt.subplots(1, 2, figsize=(7.5, 3.5))  # lado a lado
@@ -188,17 +141,13 @@ def actualizar_grafica(ax, canvas):
 
     if mySerial.in_waiting > 0:
         linea = mySerial.readline().decode('utf-8', errors='ignore').strip()
-        trozos = linea.split(":")
-        codigo = trozos[0]
 
-        if codigo == "2":
+        if linea == "Fallo":
             print("⚠️ Aviso de fallo recibido")
             reproducir_fallo()
-            hablar("Atención. Se ha detectado un fallo en el sistema.")
-        elif codigo == "1":
+        elif linea.startswith("T:"):
             try:
-                t = float(trozos[1])
-                h = float(trozos[2])
+                t, h = map(float, linea.replace("T:", "").split(":"))
                 temperaturas.append(t)
                 humedades.append(h - 5)  # pequeña separación entre líneas
                 tiempo.append(j)
@@ -223,38 +172,5 @@ def actualizar_grafica(ax, canvas):
 window = Tk()
 window.geometry("850x480")
 window.title("Control Serial (Emisor-Receptor)")
-<<<<<<< HEAD
 mostrar_menu_principal()
-=======
-
-tituloLabel = Label(window, text="Interfaz Arduino", font=("Courier", 20, "italic"))
-tituloLabel.grid(row=0, column=0, columnspan=4, padx=5, pady=5, sticky="nsew")
-
-fraseEntry = Entry(window)
-fraseEntry.grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky="nsew")
-
-EntrarButton = Button(window, text="Entrar", bg='red', fg="white", command=EntrarClick)
-EntrarButton.grid(row=1, column=3, padx=5, pady=5, sticky="nsew")
-
-IniciarGraficaButton = Button(window, text="INICIAR GRAFICA", bg='black', fg="white", command=IniciarGraficaClick)
-IniciarGraficaButton.grid(row=2, column=0, padx=5, pady=5, sticky="nsew")
-
-PararTransmisionGraficaButton = Button(window, text="PARAR TRANSMISIÓN", bg='orange', fg="white", command=PararTransmisionGraficaClick)
-PararTransmisionGraficaButton.grid(row=2, column=1, padx=5, pady=5, sticky="nsew")
-
-IniciarTransmisionGraficaButton = Button(window, text="INICIAR TRANSMISIÓN", bg='green', fg="white", command=IniciarTransmisionGraficaClick)
-IniciarTransmisionGraficaButton.grid(row=2, column=2, padx=5, pady=5, sticky="nsew")
-
-ActivarAlarmaButton = Button(window, text="ACTIVAR ALARMA", bg='red', fg="white", command=ActivarAlarmaClick)
-ActivarAlarmaButton.grid(row=2, column=3, padx=5, pady=5, sticky="nsew")
-
-frame_grafica = Frame(window, bg="white", relief="sunken", bd=2)
-frame_grafica.grid(row=3, column=0, columnspan=4, padx=10, pady=10, sticky="nsew")
-
-for i in range(4):
-    window.columnconfigure(i, weight=1)
-for i in range(4):
-    window.rowconfigure(i, weight=1)
-
->>>>>>> 8377d309a02169e76715dd6afb8791a22fd276c8
 window.mainloop()
