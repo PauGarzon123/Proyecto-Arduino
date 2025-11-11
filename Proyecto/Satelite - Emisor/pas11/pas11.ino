@@ -107,6 +107,12 @@ void loop() {
       enlace.println(h);
       delay(50);
       digitalWrite(led1, LOW);
+       if(hacermedias == true){
+        sumaT = sumaT + t;
+        sumaH = sumaH + h;
+      
+        i = i+1;
+      }
     }
 
     if(!isnan(d)){
@@ -117,15 +123,9 @@ void loop() {
       delay(200);
       digitalWrite(led1, LOW);
       
-      if(hacermedias == true){
-        sumaT = sumaT + t;
-        sumaH = sumaH + h;
-      
-        i = i+1;
-      }
-      
     }
   }
+
 
   if (i >=10 && hacermedias == true){
     mediaT = sumaT/10;
