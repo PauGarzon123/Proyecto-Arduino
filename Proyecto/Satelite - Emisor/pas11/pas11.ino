@@ -1,12 +1,14 @@
 #include <SoftwareSerial.h>
 #include <DHT.h>
+#include <Servo.h>
 
 #define DHTPIN 3
 #define DHTTYPE DHT11
 #define TRIG 4
 #define ECHO 5
+#define SERVO 6
 DHT dht(DHTPIN, DHTTYPE);
-
+Servo servoMotor;
 SoftwareSerial enlace(10, 11);
 const int led1 = 13;
 
@@ -15,9 +17,12 @@ bool hacermedias = true;
 unsigned long lastRead = 0; 
 unsigned long ultimoDatoOKTempHum = 0;
 unsigned long ultimoDatoOKdist = 0;
-const unsigned long intervaloLectura = 3000;   // cada 3 s
-const unsigned long timeoutFallo = 7000;      
-int i = 0;
+unsigned long ultimoDatoOKang = 0;
+const unsigned long intervaloLectura = 300;   // cada 3 s
+const unsigned long timeoutFallo = 7000;
+int angulo = 0;
+int incremento = 5; //la cantidad de angulo que avanza por bucle   
+int contLecturaMedias = 0;
 int jT = 0;
 int jH = 0;
 float sumaT = 0;
@@ -35,6 +40,7 @@ void setup() {
   pinMode(ECHO,INPUT);
   enlace.begin(9600);
   dht.begin();
+  servoMotor.attach(SERVO);
   enlace.println("Emisor listo. Esperando comandos START/STOP...");
 }
 float medirDistancia() {
@@ -45,12 +51,22 @@ float medirDistancia() {
   digitalWrite(TRIG, LOW);
 
 
-  long duracion = pulseIn(ECHO, HIGH, 30000); // timeout de 30 ms
+  long duracion  = pulseIn(ECHO, HIGH, 30000); // timeout de 30 ms
   if (duracion == 0) {
     return NAN; // sin eco
   }
   float distancia = duracion * 0.0343 / 2;
   return distancia;
+}
+
+int moverServo() {
+  servoMotor.write(angulo);
+  delay(20);  // pequeño tiempo para estabilizar
+
+  angulo += incremento;
+  if (angulo >= 180 || angulo <= 0) incremento = -incremento;
+
+  return angulo;
 }
 void loop() {
   //Leer los posibles mensajes que lleguen de la estación tierra
@@ -78,7 +94,7 @@ void loop() {
       hacermedias = false;
       sumaT = 0;
       sumaH = 0;
-      i = 0;
+      contLecturaMedias = 0;
       mediaT = 0;
       mediaH = 0;
     }
@@ -97,6 +113,7 @@ void loop() {
     float h = dht.readHumidity();
     float t = dht.readTemperature();
     float d = medirDistancia();
+    int ang = moverServo();
 
     if (!isnan(h) && !isnan(t)) {
       ultimoDatoOKTempHum = millis();
@@ -111,7 +128,7 @@ void loop() {
         sumaT = sumaT + t;
         sumaH = sumaH + h;
       
-        i = i+1;
+        contLecturaMedias = contLecturaMedias + 1;
       }
     }
 
@@ -124,17 +141,26 @@ void loop() {
       digitalWrite(led1, LOW);
       
     }
+    if(transmitir){
+      ultimoDatoOKang = millis();
+      digitalWrite(led1, HIGH);
+      enlace.print("7:");
+      enlace.print(ang);
+      delay(200);
+      digitalWrite(led1, LOW);
+      
+    }
   }
 
 
-  if (i >=10 && hacermedias == true){
+  if (contLecturaMedias >=10 && hacermedias == true){
     mediaT = sumaT/10;
     mediaH = sumaH/10;
     enlace.print("5:");
     enlace.print(mediaT);
     enlace.print(":");
     enlace.println(mediaH);
-    i = 0;
+    contLecturaMedias = 0;
     sumaT = 0;
     sumaH = 0;
 
@@ -167,5 +193,9 @@ void loop() {
     enlace.println("4:");
     ultimoDatoOKdist = millis(); // no enviar en bucle
   }
+  if (transmitir && (millis() - ultimoDatoOKang > timeoutFallo)) {
+    enlace.println("8:"); // código de fallo servo
+    ultimoDatoOKang = millis();
+
 
 }
