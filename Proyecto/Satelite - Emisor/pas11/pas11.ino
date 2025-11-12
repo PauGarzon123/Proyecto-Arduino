@@ -137,8 +137,10 @@ void loop() {
       digitalWrite(led1, HIGH);
       enlace.print("3:");
       enlace.print(d);
+      enlace.print(":")
+      enlace.println("ang")
 
-      delay(200);
+      delay(50);
       digitalWrite(led1, LOW);
       
     }
