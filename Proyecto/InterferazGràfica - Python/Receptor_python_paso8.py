@@ -21,7 +21,11 @@ SONIDO_FALLO = "alerta_fallo.mp3"
 
 # ==== VARIABLES GLOBALES ====
 temperaturas, humedades, tiempo = [], [], []
-j = 0
+temperaturasM, humedadesM, tiempoM = [], [], []
+j, jM = 0, 0
+contador_medias = 0
+medias_tierra = False
+sumaT, sumaH = 0, 0
 grafica_iniciada = False
 temperaturamediamaxima = None
 humedadmediamaxima = None
@@ -29,7 +33,9 @@ humedadmediamaxima = None
 # Radar
 aguja = None
 rastro = None
-axr = None        
+axr = None    
+
+
 # ==== FUNCIONES ====
 def reproducir_fallo():
     try:
@@ -50,9 +56,10 @@ def limpiar_ventana():
     for widget in window.winfo_children():
         widget.destroy()
 
+
 def mostrar_interfaz_temp_hum():
     limpiar_ventana()
-    global frame_grafica, fig, ax, ax2, linea_temp, linea_hum, grafica_iniciada, canvas
+    global frame_grafica, fig, ax, ax2, linea_temp, linea_tempM, linea_hum, linea_humM, grafica_iniciada, canvas
 
     titulo = Label(window, text="Sensor de Temperatura i Humedad", font=("Courier", 18, "bold"))
     titulo.grid(row=0, column=0, columnspan=4, pady=10)
@@ -79,7 +86,10 @@ def mostrar_interfaz_temp_hum():
     ax.axhline(50, color='gray', linestyle='--', alpha=0.4)  # línea separadora
 
     # === GRAFICA 2: Vacía (futura) ===
-    ax2.set_title("Segunda gráfica (vacía)")
+    linea_tempM, = ax2.plot([], [], 'r', label='Temperatura media (ºC)')
+    linea_humM, = ax2.plot([], [], 'b', label='Humedad media (%)')
+
+    ax2.set_title("Medias de Temperatura y Humedad")
     ax2.set_xlim(0, 60)
     ax2.set_ylim(20, 80)
     ax2.set_xlabel("Tiempo (s)")
@@ -95,13 +105,22 @@ def mostrar_interfaz_temp_hum():
 
     # ==== BOTONES ====
     Button(window, text="Parar Gráfica", bg='orange', fg="white", font=("Arial", 12),
-           command=parar_transmision).grid(row=2, column=0, padx=5, pady=5, sticky="nsew")
+           command=parar_transmision_temp_hum).grid(row=2, column=0, padx=5, pady=5, sticky="nsew")
     Button(window, text="Reanudar", bg='green', fg="white", font=("Arial", 12),
-           command=reanudar_transmision).grid(row=2, column=1, padx=5, pady=5, sticky="nsew")
+           command=reanudar_transmision_temp_hum).grid(row=2, column=1, padx=5, pady=5, sticky="nsew")
     Button(window, text="Activar Alarma", bg='red', fg="white", font=("Arial", 12),
            command=reproducir_fallo).grid(row=2, column=2, padx=5, pady=5, sticky="nsew")
     Button(window, text="Volver al menú", bg='gray', fg="white", font=("Arial", 12),
            command=mostrar_menu_principal).grid(row=2, column=3, padx=5, pady=5, sticky="nsew")
+    
+    Label(window, text="Calcular medias en:", font=("Arial", 12, "bold")).grid(row=3, column=0, padx=5, pady=10)
+
+    Button(window, text="Satélite", bg='lightblue', font=("Arial", 12),
+       command= hacer_medias_satelite).grid(row=3, column=1, padx=5, pady=5, sticky="nsew")
+
+    Button(window, text="Tierra", bg='lightgreen', font=("Arial", 12),
+       command= hacer_medias_tierra).grid(row=3, column=2, padx=5, pady=5, sticky="nsew")
+
 
     # ==== CAMPOS NUMÉRICOS ====
     Label(window, text="Temperatura media máxima:", font=("Arial", 12)).grid(row=3, column=0, padx=5, pady=5)
@@ -160,21 +179,51 @@ def mostrar_interfaz_radar():
 
     # Botones
     Button(window, text="Parar Radar", bg='orange', fg="white", font=("Arial", 12),
-           command=parar_transmision).grid(row=2, column=0, padx=5, pady=5, sticky="nsew")
+           command=parar_transmision_dist).grid(row=2, column=0, padx=5, pady=5, sticky="nsew")
     Button(window, text="Reanudar Radar", bg='green', fg="white", font=("Arial", 12),
-           command=reanudar_transmision).grid(row=2, column=1, padx=5, pady=5, sticky="nsew")
+           command=reanudar_transmision_dist).grid(row=2, column=1, padx=5, pady=5, sticky="nsew")
     Button(window, text="Volver al menú", bg='gray', fg="white", font=("Arial", 12),
            command=mostrar_menu_principal).grid(row=2, column=2, padx=5, pady=5, sticky="nsew")
 
-def parar_transmision():
+def parar_transmision_temp_hum():
     print("STOP")
     if mySerial:
-        mySerial.write(b"STOP\n")
+        mySerial.write(b"1:\n")
 
-def reanudar_transmision():
+def reanudar_transmision_temp_hum():
     print("START")
     if mySerial:
-        mySerial.write(b"START\n")
+        mySerial.write(b"2:\n")
+
+def parar_transmision_dist():
+    print("STOP")
+    if mySerial:
+        mySerial.write(b"3:\n")
+
+def reanudar_transmision_dist():
+    print("START")
+    if mySerial:
+        mySerial.write(b"4:\n")
+
+def hacer_medias_satelite():
+    global medias_tierra, contador_medias, sumaT, sumaH
+    print("Medias satelite")
+    if mySerial:
+        mySerial.write(b"10:\n")
+    medias_tierra = False
+    contador_medias = 0
+    sumaT = 0
+    sumaH = 0
+
+def hacer_medias_tierra():
+    global medias_tierra, contador_medias, sumaT, sumaH
+    print("Medias tierra")
+    if mySerial:
+        mySerial.write(b"11:\n")
+    medias_tierra = True
+    contador_medias = 0
+    sumaT = 0
+    sumaH = 0
 
 def leer_datos_serial():
     if mySerial and mySerial.in_waiting > 0:
@@ -186,10 +235,20 @@ def leer_datos_serial():
                 t = float(trozos[1])
                 h = float(trozos[2])
                 return codigo,t,h
+            if codigo == "2":
+                print("Error en los datos de temp/hum")
             if codigo == "3":
                 d = float(trozos[1])
                 ang = float(trozos[2])
                 return codigo,d,ang
+            if codigo == "4":
+                print("Error en los datos de distancia")
+            if codigo == "5":
+                tM = float(trozos[1])
+                hM = float(trozos[2])
+                return codigo,tM,hM
+            if codigo == "6":
+                print("Error en las medias")
     return None
 
 def actualizar_todo():
@@ -199,9 +258,24 @@ def actualizar_todo():
         if codigo == "1":
             codigo, t, h = datos
             actualizar_grafica_temp_hum(t, h)
+            global contador_medias, sumaT, sumaH
+            contador_medias = contador_medias + 1
+            sumaT = sumaT + t
+            sumaH = sumaH + h
+            #Calcular medias
+            if(medias_tierra == True and contador_medias == 10):
+                tM = sumaT/10
+                tH = sumaH/10
+                actualizar_grafica_medias_temp_hum(tM,tH)
+                sumaT = 0
+                sumaH = 0
+                contador_medias = 0
         if codigo == "3":
             codigo, d, ang = datos
             actualizar_radar(d, ang)
+        if codigo == "5":
+            codigo, tM, hM = datos
+            actualizar_grafica_medias_temp_hum(tM, hM)
     window.after(100, actualizar_todo)
 
 def actualizar_grafica_temp_hum(t, h):
@@ -218,6 +292,25 @@ def actualizar_grafica_temp_hum(t, h):
     ax.set_title(f"Lectura #{j}")
     j += 1
     canvas.draw()
+
+
+def actualizar_grafica_medias_temp_hum(t, h):
+    global temperaturasM, humedadesM, tiempoM, jM, linea_tempM, linea_humM, ax2, canvas
+    temperaturasM.append(t)
+    humedadesM.append(h)
+    tiempoM.append(jM)
+    linea_tempM.set_data(tiempoM, temperaturasM)
+    linea_humM.set_data(tiempoM, humedadesM)
+    if jM < 50:
+        ax2.set_xlim(0, 60)
+    else:
+        ax2.set_xlim(jM - 50, jM + 10)
+    ax2.set_title(f"Lectura #{jM}")
+    jM += 1
+    canvas.draw()
+
+
+
 
 def actualizar_radar(d,ang):
     global aguja, rastro, canvas
