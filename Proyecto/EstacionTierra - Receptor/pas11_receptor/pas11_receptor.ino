@@ -1,25 +1,31 @@
 #include <SoftwareSerial.h>
 
 SoftwareSerial enlace(10, 11);  // RX, TX (conectado al emisor)
+const int led = 13;
 
 void setup() {
   Serial.begin(9600);
   enlace.begin(9600);
+  pinMode(led, OUTPUT);
   Serial.println("Estación de Tierra lista.");
 }
 
 void loop() {
-    // recibir datos del emisor
+  // recibir datos del emisor
   if (enlace.available() > 0) {
+    digitalWrite(led, HIGH);  // 🔴 se enciende al recibir datos
+
     String datos = enlace.readStringUntil('\n');
     datos.trim();
-  
+
     if (datos.length() > 0) {
-    serial.println(datos)
+      Serial.println(datos);
     }
+
+    digitalWrite(led, LOW);   // 💡 se apaga justo después
   }
 
-    // reenviar comandos al emisor
+  // reenviar comandos al emisor
   if (Serial.available() > 0) {
     String cmd = Serial.readStringUntil('\n');
     cmd.trim();
