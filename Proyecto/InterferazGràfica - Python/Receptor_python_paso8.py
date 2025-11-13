@@ -60,6 +60,7 @@ def limpiar_ventana():
 def mostrar_interfaz_temp_hum():
     limpiar_ventana()
     global frame_grafica, fig, ax, ax2, linea_temp, linea_tempM, linea_hum, linea_humM, grafica_iniciada, canvas
+    global temp_entry, hum_entry, periodo_TH_entry, periodo_D_entry
 
     titulo = Label(window, text="Sensor de Temperatura i Humedad", font=("Courier", 18, "bold"))
     titulo.grid(row=0, column=0, columnspan=4, pady=10)
@@ -112,24 +113,37 @@ def mostrar_interfaz_temp_hum():
            command=reproducir_fallo).grid(row=2, column=2, padx=5, pady=5, sticky="nsew")
     Button(window, text="Volver al menú", bg='gray', fg="white", font=("Arial", 12),
            command=mostrar_menu_principal).grid(row=2, column=3, padx=5, pady=5, sticky="nsew")
-    
-    Label(window, text="Calcular medias en:", font=("Arial", 12, "bold")).grid(row=3, column=0, padx=5, pady=10)
 
     Button(window, text="Satélite", bg='lightblue', font=("Arial", 12),
        command= hacer_medias_satelite).grid(row=3, column=1, padx=5, pady=5, sticky="nsew")
 
     Button(window, text="Tierra", bg='lightgreen', font=("Arial", 12),
-       command= hacer_medias_tierra).grid(row=3, column=2, padx=5, pady=5, sticky="nsew")
+       command= hacer_medias_tierra).grid(row=3, column=3, padx=5, pady=5, sticky="nsew")
+    
+    Button(window, text="Enviar período Temp/Hum", bg="lightgreen", font=("Arial", 12),
+       command=enviar_nuevo_periodo_datos_temp_hum).grid(row=6, column=2, columnspan=2, padx=5, pady=5, sticky="nsew")
 
+    Button(window, text="Enviar período Distancia", bg="lightblue", font=("Arial", 12),
+       command=enviar_nuevo_periodo_datos_dist).grid(row=7, column=2, columnspan=2, padx=5, pady=5, sticky="nsew")
 
     # ==== CAMPOS NUMÉRICOS ====
-    Label(window, text="Temperatura media máxima:", font=("Arial", 12)).grid(row=3, column=0, padx=5, pady=5)
+    Label(window, text="Temperatura media máxima:", font=("Arial", 12)).grid(row=4, column=0, padx=5, pady=5)
     temp_entry = Entry(window)
-    temp_entry.grid(row=3, column=1, padx=5, pady=5)
+    temp_entry.grid(row=4, column=1, padx=5, pady=5)
 
-    Label(window, text="Humedad media máxima:", font=("Arial", 12)).grid(row=3, column=2, padx=5, pady=5)
+    Label(window, text="Humedad media máxima:", font=("Arial", 12)).grid(row=5, column=0, padx=5, pady=5)
     hum_entry = Entry(window)
-    hum_entry.grid(row=3, column=3, padx=5, pady=5)
+    hum_entry.grid(row=5, column=1, padx=5, pady=5)
+
+    Label(window, text="Calcular medias en:", font=("Arial", 12, "bold")).grid(row=3, column=0, padx=5, pady=10)
+
+    Label(window, text="Nuevo período Temp/Hum (ms):", font=("Arial", 12)).grid(row=6, column=0, padx=5, pady=5)
+    periodo_TH_entry = Entry(window)
+    periodo_TH_entry.grid(row=6, column=1, padx=5, pady=5)
+
+    Label(window, text="Nuevo período Distancia (ms):", font=("Arial", 12)).grid(row=7, column=0, padx=5, pady=5)
+    periodo_D_entry = Entry(window)
+    periodo_D_entry.grid(row=7, column=1, padx=5, pady=5)
 
 
     def guardar_valores():
@@ -138,11 +152,14 @@ def mostrar_interfaz_temp_hum():
             temperaturamediamaxima = float(temp_entry.get())
             humedadmediamaxima = float(hum_entry.get())
             print(f"Guardados: Tmax={temperaturamediamaxima}, Hmax={humedadmediamaxima}")
+            envio_comando = f"12:{temperaturamediamaxima}:{humedadmediamaxima}\n"
+            mySerial.write(envio_comando.encode())
+            print("Valores enviados al satélite:", envio_comando.strip())
         except ValueError:
             print("Introduce valores numéricos válidos")
 
     Button(window, text="Guardar valores", bg="lightblue", font=("Arial", 12),
-           command=guardar_valores).grid(row=4, column=0, columnspan=4, pady=10)
+           command=guardar_valores).grid(row=4, column=2, columnspan=4, pady=10)
 
     for i in range(4):
         window.columnconfigure(i, weight=1)
@@ -204,6 +221,20 @@ def reanudar_transmision_dist():
     print("START")
     if mySerial:
         mySerial.write(b"4:\n")
+
+def enviar_nuevo_periodo_datos_temp_hum():
+    if mySerial:
+            nuevo_periodo_TH = int(periodo_TH_entry.get())
+            envio_comando = f"5:{nuevo_periodo_TH}\n"
+            mySerial.write(envio_comando.encode())
+            print("Valores enviados al satélite:", envio_comando.strip())
+
+def enviar_nuevo_periodo_datos_dist():
+    if mySerial:
+            nuevo_periodo_D = int(periodo_D_entry.get())
+            envio_comando = f"6:{nuevo_periodo_D}\n"
+            mySerial.write(envio_comando.encode())
+            print("Valores enviados al satélite:", envio_comando.strip())
 
 def hacer_medias_satelite():
     global medias_tierra, contador_medias, sumaT, sumaH
