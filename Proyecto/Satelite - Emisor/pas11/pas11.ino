@@ -176,6 +176,16 @@ void aplicarServoOrientacionFija() {
   delay(10);
 }
 
+void leerTemperaturaHumedad() {
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
+  if (isnan(h) || isnan(t)) return;
+
+  ultimoDatoOKTempHum = millis();
+  enviarTemperatura(t, h);
+  calcularEnviarMedias(t, h);
+}
+
 void enviarTemperatura(float t, float h) {
   digitalWrite(led1, HIGH);
   enlace.print("1:");
@@ -240,6 +250,7 @@ void verificarTimeout() {
 
 ////////////////BUCLE//////////////////////
 void loop() {
+  unsigned long ahora = millis();
   if (enlace.available() > 0) {
     String cmd = enlace.readStringUntil('\n');
     procesarComando(cmd);
