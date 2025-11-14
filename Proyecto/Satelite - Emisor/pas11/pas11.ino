@@ -255,11 +255,12 @@ void loop() {
     procesarComando(cmd);
   }
   // Lectura independiente de cada sensor
-  if (transmitirTH && millis() - lastReadTH >= intervaloTempHum) {
+
+  if (transmitirTH &&  millis() - lastReadTH >= intervaloTempHum) {
     lastReadTH = millis();
     leerTemperaturaHumedad();
   }
-  if (transmitirDist && millis() - lastReadDist >= intervaloDist) {
+  if (transmitirDist &&  millis() - lastReadDist >= intervaloDist) {
     lastReadDist = millis();
     leerDistancia();
   }
