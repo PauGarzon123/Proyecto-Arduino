@@ -250,18 +250,17 @@ void verificarTimeout() {
 
 ////////////////BUCLE//////////////////////
 void loop() {
-  unsigned long ahora = millis();
   if (enlace.available() > 0) {
     String cmd = enlace.readStringUntil('\n');
     procesarComando(cmd);
   }
   // Lectura independiente de cada sensor
-  if (transmitirTH && (ahora - lastReadTH >= intervaloTempHum)) {
-    lastReadTH = ahora;
+  if (transmitirTH && millis() - lastReadTH >= intervaloTempHum) {
+    lastReadTH = millis();
     leerTemperaturaHumedad();
   }
-  if (transmitirDist && (ahora - lastReadDist >= intervaloDist)) {
-    lastReadDist = ahora;
+  if (transmitirDist && millis() - lastReadDist >= intervaloDist) {
+    lastReadDist = millis();
     leerDistancia();
   }
   verificarTimeout();
