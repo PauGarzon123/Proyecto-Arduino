@@ -5,7 +5,7 @@ import pygame
 import numpy as np
 
 # ==== CONFIGURACIÓN SERIAL ====
-device = 'COM6'
+device = 'COM4'
 BAUDRATE = 9600
 try:
     mySerial = serial.Serial(device, BAUDRATE, timeout=1)
@@ -344,7 +344,10 @@ def actualizar_grafica_medias_temp_hum(t, h):
 
 
 def actualizar_radar(d,ang):
-    global aguja, rastro, canvas
+    global aguja, rastro, canvas, axr
+    if aguja is None or rastro is None or axr is None:
+        return
+
     angulo_rad = np.deg2rad(ang)
     aguja.set_data([angulo_rad, angulo_rad], [0, d])
     radios_rastro = np.linspace(max(0, d-5), d, 5)

@@ -28,7 +28,6 @@ void loop() {
   // reenviar comandos al emisor
   if (Serial.available() > 0) {
     String cmd = Serial.readStringUntil('\n');
-    cmd.trim();
     if (cmd.length() > 0) {
       enlace.println(cmd);
       Serial.print("Comando reenviado al emisor: ");
