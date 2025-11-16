@@ -5,7 +5,7 @@ import pygame
 import numpy as np
 
 # ==== CONFIGURACIÓN SERIAL ====
-device = 'COM4'
+device = 'COM6'
 BAUDRATE = 9600
 try:
     mySerial = serial.Serial(device, BAUDRATE, timeout=1)

@@ -2,50 +2,45 @@
 #include <DHT.h>
 #include <Servo.h>
 
-#define DHTPIN 3
+#define DHTPIN 6
 #define DHTTYPE DHT11
 #define TRIG 4
 #define ECHO 5
-#define SERVO 6
+#define SERVO 3
 
 DHT dht(DHTPIN, DHTTYPE);
 Servo servoMotor;
-SoftwareSerial enlace(10, 11);
+SoftwareSerial enlace(10, 11);  // comunicación con la Estación
 
 const int led1 = 13;
 
 // Estados de transmisión
-bool transmitirTH   = true;   // enviar temperatura/humedad
-bool transmitirDist = true;   // enviar distancia
+bool transmitirTH = true;
+bool transmitirDist = true;
 
-// Medias en satélite o en tierra
-bool mediasEnSatelite = true;   // true = se calculan aquí y se envían como código 5
+// Medias en satélite o tierra
+bool mediasEnSatelite = true;
 
 // Tiempos
+unsigned long lastReadTH = 0;
+unsigned long lastReadDist = 0;
 unsigned long ultimoDatoOKTempHum = 0;
-unsigned long ultimoDatoOKdist    = 0;
-const unsigned long timeoutFallo  = 7000;
+unsigned long ultimoDatoOKdist = 0;
 
-unsigned long lastReadTH   = 0;      // temperatura / humedad
-unsigned long lastReadDist = 0;      // distancia / radar
+unsigned long intervaloTempHum = 300;
+unsigned long intervaloDist = 100;
+const unsigned long timeoutFallo = 7000;
 
-// Periodos (modificables desde tierra vía comandos 30 y 31)
-unsigned long intervaloTH   = 1000;  // ms
-unsigned long intervaloDist = 100;   // ms
+// SERVO
+bool modoRastreo = false;   // 🚫 NO se mueve al inicio
+int incremento = 5;
+int angulo = 0;
+int anguloFijo = 90;
 
-// Servo / radar
-int angulo       = 0;
-int incremento   = 5;
-bool modoRastreo = true;   // true = barrido continuo, false = ángulo fijo
-int anguloFijo   = 90;     // por defecto
-
-// Medias en satélite
-int   contLecturaMedias = 0;
+// medias
+int contLecturaMedias = 0;
 float sumaT = 0, sumaH = 0;
-
-// Límites para alarma (solo para referencia; realmente el control lo hace Python)
-float valorlimiteT = 1000;
-float valorlimiteH = 1000;
+float valorlimiteT = 100, valorlimiteH = 100;
 
 void setup() {
   pinMode(led1, OUTPUT);
@@ -56,7 +51,44 @@ void setup() {
   dht.begin();
   servoMotor.attach(SERVO);
 
-  enlace.println("Emisor listo. Esperando comandos...");
+  enlace.println("Satélite listo.");
+}
+
+void procesarComando(String cmd) {
+  cmd.trim();
+  int fin = cmd.indexOf(':');
+  int codigo = cmd.substring(0, fin).toInt();
+  int inicio = fin + 1;
+
+  if (codigo == 1) transmitirTH = false;
+  else if (codigo == 2) transmitirTH = true;
+  else if (codigo == 3) transmitirDist = false;
+  else if (codigo == 4) transmitirDist = true;
+  else if (codigo == 5) intervaloTempHum = cmd.substring(inicio).toInt();
+  else if (codigo == 6) intervaloDist = cmd.substring(inicio).toInt();
+  else if (codigo == 7) { modoRastreo = true; enlace.println("Modo RASTREO activado."); }
+  else if (codigo == 8) {
+      anguloFijo = cmd.substring(inicio).toInt();
+      if (anguloFijo < 0) anguloFijo = 0;
+      if (anguloFijo > 180) anguloFijo = 180;
+      modoRastreo = false;
+      enlace.println("Modo ANGULO FIJO activado.");
+  }
+  else if (codigo == 10) {
+      mediasEnSatelite = true;
+      sumaT = sumaH = 0;
+      contLecturaMedias = 0;
+  }
+  else if (codigo == 11) {
+      mediasEnSatelite = false;
+      sumaT = sumaH = 0;
+      contLecturaMedias = 0;
+  }
+  else if (codigo == 12) {
+      int pos = cmd.indexOf(':', inicio);
+      valorlimiteT = cmd.substring(inicio, pos).toFloat();
+      valorlimiteH = cmd.substring(pos+1).toFloat();
+  }
 }
 
 float medirDistancia() {
@@ -65,210 +97,76 @@ float medirDistancia() {
   digitalWrite(TRIG, HIGH);
   delayMicroseconds(10);
   digitalWrite(TRIG, LOW);
-
-  long duracion = pulseIn(ECHO, HIGH, 30000); // timeout 30 ms
-  if (duracion == 0) {
-    return NAN; // sin eco
-  }
-  float distancia = duracion * 0.0343 / 2.0;
-  return distancia;
+  long duracion = pulseIn(ECHO, HIGH, 30000);
+  if (duracion == 0) return NAN;
+  return duracion * 0.0343 / 2;
 }
 
-int moverServoBarrido() {
+int moverServo() {
   servoMotor.write(angulo);
-  delay(10);  // pequeño tiempo para estabilizar
-
+  delay(10);
   angulo += incremento;
   if (angulo >= 180 || angulo <= 0) incremento = -incremento;
-
   return angulo;
 }
 
-void aplicarServoOrientacionFija() {
+void aplicarServoFijo() {
   servoMotor.write(anguloFijo);
   delay(10);
 }
 
-void procesarComandos() {
-  if (!enlace.available()) return;
+void enviarTempHum(float t, float h) {
+  enlace.print("1:");
+  enlace.print(t);
+  enlace.print(":");
+  enlace.println(h);
+}
 
-  String cmd = enlace.readStringUntil('\n');
-  cmd.trim();
-  if (cmd.length() == 0) return;
-
-  int fin = cmd.indexOf(':');
-  if (fin == -1) fin = cmd.length();
-  int codigo = cmd.substring(0, fin).toInt();
-  int inicio = fin + 1;
-
-  switch (codigo) {
-    case 1: // parar T/H
-      transmitirTH = false;
-      enlace.println("TH STOP");
-      break;
-
-    case 2: // reanudar T/H
-      transmitirTH = true;
-      enlace.println("TH START");
-      break;
-
-    case 3: // parar distancia
-      transmitirDist = false;
-      enlace.println("DIST STOP");
-      break;
-
-    case 4: // reanudar distancia
-      transmitirDist = true;
-      enlace.println("DIST START");
-      break;
-
-    case 10: // medias en satélite
-      mediasEnSatelite = true;
-      contLecturaMedias = 0;
-      sumaT = 0;
-      sumaH = 0;
-      enlace.println("Medias en SATELITE");
-      break;
-
-    case 11: // medias en tierra
-      mediasEnSatelite = false;
-      contLecturaMedias = 0;
-      sumaT = 0;
-      sumaH = 0;
-      enlace.println("Medias en TIERRA");
-      break;
-
-    case 12: { // valor límite T y H (no estrictamente necesario aquí, pero lo guardamos)
-      int fin2 = cmd.indexOf(':', inicio);
-      if (fin2 == -1) fin2 = cmd.length();
-      String st = cmd.substring(inicio, fin2);
-      String sh = cmd.substring(fin2 + 1);
-      valorlimiteT = st.toFloat();
-      valorlimiteH = sh.toFloat();
-      enlace.println("Nuevos limites T/H recibidos.");
-      break;
-    }
-
-    case 30: { // nuevo intervalo TH en ms
-      String s = cmd.substring(inicio);
-      unsigned long nuevo = s.toInt();
-      if (nuevo >= 100) intervaloTH = nuevo;
-      enlace.print("Nuevo intervaloTH: ");
-      enlace.println(intervaloTH);
-      break;
-    }
-
-    case 31: { // nuevo intervalo Distancia en ms
-      String s = cmd.substring(inicio);
-      unsigned long nuevo = s.toInt();
-      if (nuevo >= 20) intervaloDist = nuevo;
-      enlace.print("Nuevo intervaloDist: ");
-      enlace.println(intervaloDist);
-      break;
-    }
-
-    case 40: // modo rastreo
-      modoRastreo = true;
-      enlace.println("Modo RASTREO activado.");
-      break;
-
-    case 41: { // ángulo fijo
-      String s = cmd.substring(inicio);
-      anguloFijo = s.toInt();
-      if (anguloFijo < 0)   anguloFijo = 0;
-      if (anguloFijo > 180) anguloFijo = 180;
-      modoRastreo = false;
-      enlace.print("Modo ANGULO FIJO: ");
-      enlace.println(anguloFijo);
-      break;
-    }
-
-    default:
-      // comando desconocido
-      enlace.print("CMD desconocido: ");
-      enlace.println(cmd);
-      break;
-  }
+void enviarDist(float d, int ang) {
+  enlace.print("3:");
+  enlace.print(d);
+  enlace.print(":");
+  enlace.println(ang);
 }
 
 void loop() {
-  unsigned long ahora = millis();
-
-  // Procesar comandos desde la estación
-  procesarComandos();
-
-  // ==== TEMPERATURA / HUMEDAD ====
-  if (transmitirTH && (ahora - lastReadTH >= intervaloTH)) {
-    lastReadTH = ahora;
-
-    float h = dht.readHumidity();
-    float t = dht.readTemperature();
-
-    if (!isnan(h) && !isnan(t)) {
-      ultimoDatoOKTempHum = ahora;
-      digitalWrite(led1, HIGH);
-
-      enlace.print("1:");
-      enlace.print(t);
-      enlace.print(":");
-      enlace.println(h);
-
-      digitalWrite(led1, LOW);
-
-      if (mediasEnSatelite) {
-        sumaT += t;
-        sumaH += h;
-        contLecturaMedias++;
-        if (contLecturaMedias >= 10) {
-          float tM = sumaT / 10.0;
-          float hM = sumaH / 10.0;
-          enlace.print("5:");
-          enlace.print(tM);
-          enlace.print(":");
-          enlace.println(hM);
-          contLecturaMedias = 0;
-          sumaT = 0;
-          sumaH = 0;
-        }
-      }
-    }
-    // si fallan, el código 2: lo gestiona más abajo por timeout
+  if (enlace.available() > 0) {
+    String cmd = enlace.readStringUntil('\n');
+    procesarComando(cmd);
   }
 
-  // ==== DISTANCIA / RADAR ====
-  if (transmitirDist && (ahora - lastReadDist >= intervaloDist)) {
-    lastReadDist = ahora;
-
-    int angActual;
-    if (modoRastreo) {
-      angActual = moverServoBarrido();
+  // TEMP/HUM
+  if (transmitirTH && millis() - lastReadTH >= intervaloTempHum) {
+    lastReadTH = millis();
+    float h = dht.readHumidity();
+    float t = dht.readTemperature();
+    if (!isnan(t) && !isnan(h)) {
+      ultimoDatoOKTempHum = millis();
+      enviarTempHum(t,h);
     } else {
-      aplicarServoOrientacionFija();
-      angActual = anguloFijo;
+      enlace.println("2:");
     }
+  }
+
+  // DISTANCIA
+  if (transmitirDist && millis() - lastReadDist >= intervaloDist) {
+    lastReadDist = millis();
+
+    int ang;
+    if (modoRastreo) ang = moverServo();
+    else { aplicarServoFijo(); ang = anguloFijo; }
 
     float d = medirDistancia();
     if (!isnan(d)) {
-      ultimoDatoOKdist = ahora;
-      digitalWrite(led1, HIGH);
-
-      enlace.print("3:");
-      enlace.print(d);
-      enlace.print(":");
-      enlace.println(angActual);
-
-      digitalWrite(led1, LOW);
+      ultimoDatoOKdist = millis();
+      enviarDist(d,ang);
     }
+    else enlace.println("4:");
   }
 
-  // ==== MENSAJES DE FALLO POR TIMEOUT ====
-  if (transmitirTH && (ahora - ultimoDatoOKTempHum > timeoutFallo)) {
+  // TIMEOUTS
+  if (millis() - ultimoDatoOKTempHum > timeoutFallo)
     enlace.println("2:");
-    ultimoDatoOKTempHum = ahora;
-  }
-
-  if (transmitirDist && (ahora - ultimoDatoOKdist > timeoutFallo)) {
+  if (millis() - ultimoDatoOKdist > timeoutFallo)
     enlace.println("4:");
-    ultimoDatoOKdist = ahora;
-  }
 }

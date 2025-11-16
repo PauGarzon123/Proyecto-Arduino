@@ -2,11 +2,11 @@
 #include <DHT.h>
 #include <Servo.h>
 
-#define DHTPIN 3
+#define DHTPIN 6
 #define DHTTYPE DHT11
 #define TRIG 4
 #define ECHO 5
-#define SERVO 6
+#define SERVO 3
 DHT dht(DHTPIN, DHTTYPE);
 Servo servoMotor;
 SoftwareSerial enlace(10, 11);
