@@ -1,98 +1,71 @@
 #include <SoftwareSerial.h>
 
-SoftwareSerial enlace(10, 11);  // RX, TX (conectado al emisor)
+SoftwareSerial enlace(10, 11);
 
-const int led     = 13;
-const int pinTemp = 2;  // alarma temperatura
-const int pinHum  = 3;  // alarma humedad
-const int pinRxTH = 4;  // indica que llegan datos de temperatura/humedad
-const int pinRxD  = 5;  // indica que llegan datos de distancia
+// LEDs
+const int LED_ALARMA  = A1;
+const int LED_RASTREO = A2;
+const int LED_DIST    = A3;
+const int LED_TH      = A4;
+const int LED_ERROR   = A5;
 
 void setup() {
   Serial.begin(9600);
   enlace.begin(9600);
 
-  pinMode(led, OUTPUT);
-  pinMode(pinTemp, OUTPUT);
-  pinMode(pinHum, OUTPUT);
-  pinMode(pinRxTH, OUTPUT);
-  pinMode(pinRxD, OUTPUT);
-
-  digitalWrite(led, LOW);
-  digitalWrite(pinTemp, LOW);
-  digitalWrite(pinHum, LOW);
-  digitalWrite(pinRxTH, LOW);
-  digitalWrite(pinRxD, LOW);
+  pinMode(LED_ALARMA, OUTPUT);
+  pinMode(LED_RASTREO, OUTPUT);
+  pinMode(LED_DIST, OUTPUT);
+  pinMode(LED_TH, OUTPUT);
+  pinMode(LED_ERROR, OUTPUT);
 
   Serial.println("Estación de Tierra lista.");
 }
 
 void loop() {
-  // ---- Datos del satélite hacia el PC ----
-  if (enlace.available() > 0) {
-    digitalWrite(led, HIGH);
 
+  if (enlace.available() > 0) {
     String datos = enlace.readStringUntil('\n');
     datos.trim();
+    Serial.println(datos);
 
-    if (datos.length() > 0) {
-      // Miramos el tipo de mensaje (primer campo antes de ':')
-      int fin = datos.indexOf(':');
-      if (fin == -1) fin = datos.length();
-      String strCodigo = datos.substring(0, fin);
-
-      // 1 y 5 -> temperatura/humedad
-      if (strCodigo == "1" || strCodigo == "5") {
-        digitalWrite(pinRxTH, HIGH);   // se queda en HIGH una vez haya llegado algo
-      }
-      // 3 -> distancia
-      if (strCodigo == "3") {
-        digitalWrite(pinRxD, HIGH);
-      }
-
-      Serial.println(datos);  // el PC/Python lo ve
+    // Temp/Hum
+    if (datos.startsWith("1:")) {
+      digitalWrite(LED_TH, HIGH); delay(20);
+      digitalWrite(LED_TH, LOW);
     }
 
-    digitalWrite(led, LOW);
+    // Distancia
+    else if (datos.startsWith("3:")) {
+      digitalWrite(LED_DIST, HIGH); delay(20);
+      digitalWrite(LED_DIST, LOW);
+    }
+
+    // Errores
+    else if (datos.startsWith("2:") || datos.startsWith("4:")) {
+      digitalWrite(LED_ERROR, HIGH); delay(150);
+      digitalWrite(LED_ERROR, LOW);
+    }
+
+    // Alarma
+    else if (datos.startsWith("6:")) {
+      digitalWrite(LED_ALARMA, HIGH); delay(400);
+      digitalWrite(LED_ALARMA, LOW);
+    }
+
+    // Rastreo ON
+    if (datos.indexOf("RASTREO") != -1)
+      digitalWrite(LED_RASTREO, HIGH);
+
+    // Ángulo fijo → rastreo OFF
+    if (datos.indexOf("ANGULO FIJO") != -1)
+      digitalWrite(LED_RASTREO, LOW);
   }
 
-  // ---- Comandos del PC (Python) hacia satélite o para activar pines ----
+  // Reenvío comandos del PC al satélite
   if (Serial.available() > 0) {
     String cmd = Serial.readStringUntil('\n');
-    if (cmd.length() > 0) {
-
-      int fin = cmd.indexOf(':');
-      if (fin == -1) fin = cmd.length();
-      int codigo = cmd.substring(0, fin).toInt();
-
-      if (codigo == 20) {
-        // controlar pinTemp
-        int valor = cmd.substring(fin + 1).toInt();
-        if (valor == 1) {
-          digitalWrite(pinTemp, HIGH);
-          Serial.println("PIN 2 (TEMP) -> HIGH");
-        } else {
-          digitalWrite(pinTemp, LOW);
-          Serial.println("PIN 2 (TEMP) -> LOW");
-        }
-      }
-      else if (codigo == 21) {
-        // controlar pinHum
-        int valor = cmd.substring(fin + 1).toInt();
-        if (valor == 1) {
-          digitalWrite(pinHum, HIGH);
-          Serial.println("PIN 3 (HUM) -> HIGH");
-        } else {
-          digitalWrite(pinHum, LOW);
-          Serial.println("PIN 3 (HUM) -> LOW");
-        }
-      } else {
-        // cualquier otro comando se reenvía al satélite
-        enlace.println(cmd);
-        Serial.print("Comando reenviado al emisor: ");
-        Serial.println(cmd);
-      }
-    }
+    cmd.trim();
+    enlace.println(cmd);
   }
 }
-
