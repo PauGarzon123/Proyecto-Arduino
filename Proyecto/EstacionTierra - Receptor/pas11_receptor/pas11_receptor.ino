@@ -59,7 +59,6 @@ void loop() {
   // ---- Comandos del PC (Python) hacia satélite o para activar pines ----
   if (Serial.available() > 0) {
     String cmd = Serial.readStringUntil('\n');
-    cmd.trim();
     if (cmd.length() > 0) {
 
       int fin = cmd.indexOf(':');
