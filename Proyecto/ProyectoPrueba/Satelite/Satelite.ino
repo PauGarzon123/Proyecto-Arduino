@@ -30,8 +30,8 @@ unsigned long lastReadTH   = 0;      // temperatura / humedad
 unsigned long lastReadDist = 0;      // distancia / radar
 
 // Periodos (modificables desde tierra vía comandos 30 y 31)
-unsigned long intervaloTH   = 1000;  // ms
-unsigned long intervaloDist = 100;   // ms
+unsigned long periodoTH   = 1000;  // ms
+unsigned long periodoDist = 100;   // ms
 
 // Servo / radar
 int angulo       = 0;
@@ -152,18 +152,18 @@ void procesarComandos() {
     case 30: { // nuevo intervalo TH en ms
       String s = cmd.substring(inicio);
       unsigned long nuevo = s.toInt();
-      if (nuevo >= 100) intervaloTH = nuevo;
+      if (nuevo >= 100) periodoTH = nuevo;
       enlace.print("Nuevo intervaloTH: ");
-      enlace.println(intervaloTH);
+      enlace.println(periodoTH);
       break;
     }
 
     case 31: { // nuevo intervalo Distancia en ms
       String s = cmd.substring(inicio);
       unsigned long nuevo = s.toInt();
-      if (nuevo >= 20) intervaloDist = nuevo;
+      if (nuevo >= 20) periodoDist = nuevo;
       enlace.print("Nuevo intervaloDist: ");
-      enlace.println(intervaloDist);
+      enlace.println(periodoDist);
       break;
     }
 
@@ -198,7 +198,7 @@ void loop() {
   procesarComandos();
 
   // ==== TEMPERATURA / HUMEDAD ====
-  if (transmitirTH && (ahora - lastReadTH >= intervaloTH)) {
+  if (transmitirTH && (ahora - lastReadTH >= periodoTH)) {
     lastReadTH = ahora;
 
     float h = dht.readHumidity();
@@ -236,7 +236,7 @@ void loop() {
   }
 
   // ==== DISTANCIA / RADAR ====
-  if (transmitirDist && (ahora - lastReadDist >= intervaloDist)) {
+  if (transmitirDist && (ahora - lastReadDist >= periodoDist)) {
     lastReadDist = ahora;
 
     int angActual;

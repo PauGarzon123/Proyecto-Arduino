@@ -22,7 +22,7 @@ void setup() {
   digitalWrite(pinTemp, LOW);
   digitalWrite(pinHum, LOW);
   digitalWrite(pinRxTH, LOW);
-  digitalWrite(pinRxD, LOW);
+  digitalWrite(pinRxD, LOW);  
 
   Serial.println("Estación de Tierra lista.");
 }
@@ -39,14 +39,14 @@ void loop() {
       // Miramos el tipo de mensaje (primer campo antes de ':')
       int fin = datos.indexOf(':');
       if (fin == -1) fin = datos.length();
-      String scod = datos.substring(0, fin);
+      String strCodigo = datos.substring(0, fin);
 
       // 1 y 5 -> temperatura/humedad
-      if (scod == "1" || scod == "5") {
+      if (strCodigo == "1" || strCodigo == "5") {
         digitalWrite(pinRxTH, HIGH);   // se queda en HIGH una vez haya llegado algo
       }
       // 3 -> distancia
-      if (scod == "3") {
+      if (strCodigo == "3") {
         digitalWrite(pinRxD, HIGH);
       }
 

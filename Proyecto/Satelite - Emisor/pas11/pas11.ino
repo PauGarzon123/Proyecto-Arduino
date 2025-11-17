@@ -25,8 +25,8 @@ unsigned long lastReadDist = 0;
 unsigned long ultimoDatoOKTempHum = 0;
 unsigned long ultimoDatoOKdist = 0;
 // Periodos
-unsigned long intervaloTempHum = 300;
-unsigned long intervaloDist = 100;
+unsigned long periodoTempHum = 300;
+unsigned long periodoDist = 100;
 const unsigned long timeoutFallo = 7000;
 
 // servo/radar
@@ -36,12 +36,14 @@ bool modoRastreo = true;   // true = barrido continuo, false = ángulo fijo
 int anguloFijo   = 90;     // por defecto
 
 // Variables para medias
-int contLecturaMedias = 0;
+const int N = 10;
+float tempCola[N];
+float humCola[N];
+int idx = 0;
+int cont = 0;
 int jT = 0;
 int jH = 0;
-float sumaT = 0;
 float mediaT = 0;
-float sumaH = 0;
 float mediaH = 0;
 float valorlimiteT = 100;
 float valorlimiteH = 100;
@@ -82,16 +84,16 @@ void procesarComando(String cmd) {
   else if (codigo == 5) {  
     String s = cmd.substring(inicio);
     unsigned long nuevo = s.toInt();
-    if (nuevo >= 100) intervaloTempHum = nuevo;
-    enlace.print("Nuevo intervaloTempHum: ");
-    enlace.println(intervaloTempHum);
+    if (nuevo >= 100) periodoTempHum = nuevo;
+    enlace.print("Nuevo periodoTempHum: ");
+    enlace.println(periodoTempHum);
   } 
   else if (codigo == 6) {  
     String s = cmd.substring(inicio);
     unsigned long nuevo = s.toInt();
-    if (nuevo >= 20) intervaloDist = nuevo;
-    enlace.print("Nuevo intervaloDist: ");
-    enlace.println(intervaloDist);
+    if (nuevo >= 20) periodoDist = nuevo;
+    enlace.print("Nuevo PeriodoDist: ");
+    enlace.println(periodoDist);
   } 
   else if (codigo == 7) {  
     modoRastreo = true;
@@ -197,34 +199,42 @@ void enviarTemperatura(float t, float h) {
 }
 
 void calcularEnviarMedias(float t, float h) {
-  if (!mediasEnSatelite) return;
 
-  sumaT += t;
-  sumaH += h;
-  contLecturaMedias++;
+    if (!mediasEnSatelite) return;
 
-  if (contLecturaMedias >= 10) {
-    mediaT = sumaT / 10;
-    mediaH = sumaH / 10;
-    enlace.print("5:");
-    enlace.print(mediaT);
-    enlace.print(":");
-    enlace.println(mediaH);
+    // --- actualizar cola circular ---
+    tempCola[idx] = t;
+    humCola[idx] = h;
+    idx = (idx + 1) % N;
+    if (cont < N) cont++;
 
-    contLecturaMedias = 0;
-    sumaT = sumaH = 0;
+    // --- calcular medias ---
+    float sumaT = 0, sumaH = 0;
+    for (int i = 0; i < cont; i++) {
+        sumaT += tempCola[i];
+        sumaH += humCola[i];
+    }
+    mediaT = sumaT / cont;
+    mediaH = sumaH / cont;
 
-    // Verificar si hay 3 medias consecutivas por encima de límites
-    if (mediaT >= valorlimiteT) {
-      jT++;
-      if (jT >= 3) enlace.println("6:");
-    } else jT = 0;
+    // --- enviar medias solo cuando hay 10 valores ---
+    if (cont == N) {
+        enlace.print("5:");
+        enlace.print(mediaT);
+        enlace.print(":");
+        enlace.println(mediaH);
 
-    if (mediaH >= valorlimiteH) {
-      jH++;
-      if (jH >= 3) enlace.println("6:");
-    } else jH = 0;
-  }
+        // alarmas igual que antes
+        if (mediaT >= valorlimiteT) {
+            jT++;
+            if (jT >= 3) enlace.println("6:");
+        } else jT = 0;
+
+        if (mediaH >= valorlimiteH) {
+            jH++;
+            if (jH >= 3) enlace.println("6:");
+        } else jH = 0;
+    }
 }
 
 void enviarDistancia(float d, int ang) {
@@ -255,11 +265,11 @@ void loop() {
     procesarComando(cmd);
   }
   // Lectura independiente de cada sensor
-  if (transmitirTH &&  millis() - lastReadTH >= intervaloTempHum) {
+  if (transmitirTH &&  millis() - lastReadTH >= periodoTempHum) {
     lastReadTH = millis();
     leerTemperaturaHumedad();
   }
-  if (transmitirDist &&  millis() - lastReadDist >= intervaloDist) {
+  if (transmitirDist &&  millis() - lastReadDist >= periodoDist) {
     lastReadDist = millis();
     leerDistancia();
   }

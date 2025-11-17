@@ -86,7 +86,7 @@ def mostrar_interfaz_temp_hum():
     ax.set_ylabel("Valor")
     ax.axhline(50, color='gray', linestyle='--', alpha=0.4)  # línea separadora
 
-    # === GRAFICA 2: Vacía (futura) ===
+    # === GRAFICA 2 ===
     linea_tempM, = ax2.plot([], [], 'r', label='Temperatura media (ºC)')
     linea_humM, = ax2.plot([], [], 'b', label='Humedad media (%)')
 
