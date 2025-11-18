@@ -41,6 +41,7 @@ float tempCola[N];
 float humCola[N];
 int idx = 0;
 int cont = 0;
+int nuevos = 0;
 int jT = 0;
 int jH = 0;
 float mediaT = 0;
@@ -110,16 +111,10 @@ void procesarComando(String cmd) {
   } 
   else if (codigo == 10) {  
     mediasEnSatelite = true;
-    contLecturaMedias = 0;
-    sumaT = 0;
-    sumaH = 0;
     enlace.println("Medias en SATELITE");
   } 
   else if (codigo == 11) {  
     mediasEnSatelite = false;
-    contLecturaMedias = 0;
-    sumaT = 0;
-    sumaH = 0;
     enlace.println("Medias en TIERRA");
   } 
   else if (codigo == 12) {  
@@ -208,21 +203,26 @@ void calcularEnviarMedias(float t, float h) {
     idx = (idx + 1) % N;
     if (cont < N) cont++;
 
-    // --- calcular medias ---
-    float sumaT = 0, sumaH = 0;
-    for (int i = 0; i < cont; i++) {
-        sumaT += tempCola[i];
-        sumaH += humCola[i];
-    }
-    mediaT = sumaT / cont;
-    mediaH = sumaH / cont;
+    nuevos++;
+
 
     // --- enviar medias solo cuando hay 10 valores ---
-    if (cont == N) {
+    if (cont == N && nuevos == N) {
+        // --- calcular medias ---
+        float sumaT = 0, sumaH = 0;
+        for (int i = 0; i < cont; i++) {
+            sumaT += tempCola[i];
+            sumaH += humCola[i];
+        }
+        mediaT = sumaT / cont;
+        mediaH = sumaH / cont;
+      
         enlace.print("5:");
         enlace.print(mediaT);
         enlace.print(":");
         enlace.println(mediaH);
+
+        nuevos = 0;
 
         // alarmas igual que antes
         if (mediaT >= valorlimiteT) {
