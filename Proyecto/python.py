@@ -22,25 +22,21 @@ SONIDO_FALLO = "alerta_fallo2.mp3"
 # ==== VARIABLES ====
 temperaturas, humedades, tiempo = [], [], []
 temperaturasM, humedadesM, tiempoM = [], [], []
-j, jM = 0, 0
+j, jM, jT, jH = 0, 0, 0, 0
 contador_medias = 0
 medias_tierra = False
 sumaT, sumaH = 0, 0
 grafica_iniciada = False
 nuevos = 0
 idx = 0
+tmax, hmax = 100, 100
 N = 10
 tempCola = [0]*N
 humCola = [0]*N
 
-aguja = None
-rastro = None
-axr = None
+aguja, rastro, axr = None, None, None
 
-linea_tempM = None
-linea_temp = None
-linea_hum = None
-linea_humM = None
+linea_tempM, linea_temp, linea_hum, linea_humM = None, None, None, None
 
 
 def reproducir_fallo(): #Reproduce el sonido de fallo. No tiene parametros. No produce un resultado.
@@ -297,7 +293,7 @@ def actualizar_todo(): #Lee los datos que le llegan, segun el codigo mete los da
             actualizar_grafica_temp_hum(t,h)
 
             if medias_tierra:
-                global contador_medias, sumaT, sumaH
+                global contador_medias, sumaT, sumaH, idx, nuevos, jT, jH, tempCola, tmax, hmax
                 tempCola[idx] = t
                 humCola[idx] = h
                 idx = (idx + 1)%N
@@ -306,11 +302,33 @@ def actualizar_todo(): #Lee los datos que le llegan, segun el codigo mete los da
                 nuevos = nuevos + 1
 
                 if contador_medias == N and nuevos == N:
-                    for(int i = 0)
-                    SumaT = 
-        
+                    sumaT, sumaH = 0, 0
+                    for i in range(contador_medias):
+                        sumaT += tempCola[i]
+                        sumaH += humCola[i]
+                    tM = sumaT/contador_medias
+                    hM = sumaH/contador_medias
 
-                actualizar_grafica_medias_temp_hum(tM,hM)
+                    actualizar_grafica_medias_temp_hum(tM,hM)
+
+                    nuevos = 0
+
+                    if(tM >= tmax):
+                        jT = jT+1
+                        if(jT >= 3): 
+                            print("Error en las medias")
+                            reproducir_fallo()
+                        
+                    else: jT = 0
+
+                    if(hM >= hmax):
+                        jH = jH+1
+                        if(jH >= 3): 
+                            print("Error en las medias")
+                            reproducir_fallo()
+                        
+                    else: jH = 0
+                
 
 
         elif codigo == "3": # radar
