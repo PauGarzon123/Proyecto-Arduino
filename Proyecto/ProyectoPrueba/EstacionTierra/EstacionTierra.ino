@@ -54,12 +54,13 @@ void loop() {
     }
 
     // Rastreo ON
-    if (datos.indexOf("RASTREO") != -1)
+    else if (datos.startsWith("7:")) {
       digitalWrite(LED_RASTREO, HIGH);
-
-    // Ángulo fijo → rastreo OFF
-    if (datos.indexOf("ANGULO FIJO") != -1)
+    }
+    // Rastreo ON
+    else if (datos.startsWith("8:")) {
       digitalWrite(LED_RASTREO, LOW);
+    }
   }
 
   // Reenvío comandos del PC al satélite
