@@ -211,7 +211,9 @@ def mostrar_interfaz_temp_hum():
             tmax = float(temp_entry.get())
             hmax = float(hum_entry.get())
             if mySerial:
-                mySerial.write(f"12:{tmax}:{hmax}\n".encode())
+                mensaje = f"12:{tmax}:{hmax}"
+                checksum = hacerChecksum(mensaje)
+                mySerial.write(f"{mensaje}|{checksum}\n".encode())
                 print("Valores enviados al satélite:",
                       f"12:{tmax}:{hmax}\n".strip())
         except:
@@ -320,9 +322,10 @@ def mostrar_interfaz_radar():
         if mySerial:
             ang = angulo_entry.get().strip()
             if ang.isdigit():
-                cmd = f"8:{ang}\n".encode()
-                mySerial.write(cmd)
-                print("Ángulo fijo enviado:", cmd)
+                mensaje = f"8:{ang}"
+                checksum = hacerChecksum(mensaje)
+                mySerial.write(f"{mensaje}|{checksum}\n".encode())
+                print("Ángulo fijo enviado:", mensaje)
 
     Button(window, text="Aplicar Ángulo", bg='lightblue',
            command=aplicar_angulo).grid(row=3, column=3)
@@ -459,7 +462,9 @@ def enviar_nuevo_periodo_datos_temp_hum():
     try:
         val = int(periodo_TH_entry.get())
         if mySerial:
-            mySerial.write(f"5:{val}\n".encode())
+            mensaje = f"5:{val}"
+            checksum = hacerChecksum(mensaje)
+            mySerial.write(f"{mensaje}|{checksum}\n".encode())
     except:
         print("Valor incorrecto periodo TH")
         reproducir_fallo()
@@ -472,7 +477,9 @@ def enviar_nuevo_periodo_datos_dist():
     try:
         val = int(periodo_D_entry.get())
         if mySerial:
-            mySerial.write(f"6:{val}\n".encode())
+            mensaje = f"6:{val}"
+            checksum = hacerChecksum(mensaje)
+            mySerial.write(f"{mensaje}|{checksum}\n".encode())
     except:
         print("Valor incorrecto periodo Dist")
         reproducir_fallo()
@@ -492,12 +499,11 @@ def hacer_medias_satelite():
 def hacer_medias_tierra():
     """
     El usuario decide que las medias las calcule el PC aquí.
-    Esto NO requiere checksum.
     """
     global medias_tierra
     medias_tierra = True
     if mySerial:
-        mySerial.write(b"11:\n")
+        mySerial.write(b"11:|\n")
 
 
 # ======================================================
