@@ -6,6 +6,8 @@ import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 import sys
 import re
+import os
+import datetime
 
 # -----------------------------
 # CONFIGURACIÓN DEL PUERTO SERIE
@@ -61,21 +63,31 @@ aguja, rastro, axr = None, None, None
 # Líneas de las gráficas (se rellenan al crear las gráficas)
 linea_tempM, linea_temp, linea_hum, linea_humM = None, None, None, None
 
+eventos = "eventos.txt"
 
+def registrar_evento(tipo, descripcion):
+    """
+    Guarda un evento en el fichero de eventos.
+    tipo: 'Comando', 'Alarma', 'Observación'
+    """
+    ahora = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(eventos, "a", encoding="utf-8") as f:
+        f.write(f"{ahora} | {tipo} | {descripcion}\n")
+
+def enviar_comando(cmd_str):
+    if mySerial:
+        mySerial.write(cmd_str.encode())
+        registrar_evento("Comando", cmd_str.strip())
 # ======================================================
 # FUNCIÓN PARA REPRODUCIR SONIDO DE FALLO
 # ======================================================
-def reproducir_fallo():
-    """
-    Reproduce un sonido cuando ocurre un error.
-    Esto nos avisa de fallos en lectura o en medias.
-    """
+def reproducir_fallo(descripcion="Alarma detectada"):
+    registrar_evento("Alarma", descripcion)
     try:
         pygame.mixer.music.load(SONIDO_FALLO)
         pygame.mixer.music.play()
     except Exception as e:
         print("Error reproduciendo sonido:", e)
-
 
 # ======================================================
 # LIMPIAR VENTANA TKINTER
@@ -113,6 +125,13 @@ def mostrar_menu_principal():
     Button(window, text="Órbita 3D Satélite",
            font=("Arial", 16), bg='lightyellow',
            command=abrir_grafica_3d).pack(pady=20)
+    
+    Button(window, text="Registrar Observación", 
+           font=("Arial", 16), bg='lightpink',
+           command=mostrar_panel_observaciones).pack(pady=20)
+    Button(window, text="Ver Registro de Eventos",
+           font=("Arial", 16), bg='lightgray',
+           command=mostrar_eventos).pack(pady=20)
 
 
 
@@ -210,12 +229,8 @@ def mostrar_interfaz_temp_hum():
         try:
             tmax = float(temp_entry.get())
             hmax = float(hum_entry.get())
-            if mySerial:
-                mensaje = f"12:{tmax}:{hmax}"
-                checksum = hacerChecksum(mensaje)
-                mySerial.write(f"{mensaje}|{checksum}\n".encode())
-                print("Valores enviados al satélite:",
-                      f"12:{tmax}:{hmax}\n".strip())
+            enviar_comando(f"12:{tmax}:{hmax}\n")
+            print("Valores enviados al satélite:", f"12:{tmax}:{hmax}\n".strip())
         except:
             print("Valores incorrectos")
 
@@ -247,9 +262,8 @@ def activar_modo_rastreo():
     -> "pon el servo en modo barrido automático"
     Es decir, irá oscilando de 0º a 180º y vuelta.
     """
-    if mySerial:
-        mySerial.write(b"7:|113\n")  # El checksum de "7:" ya está calculado
-        print("Modo rastreo enviado")
+    enviar_comando("7:|113\n") # El checksum de "7:" ya está calculado
+    print("Modo rastreo enviado")
 
 
 def mostrar_interfaz_radar():
@@ -319,13 +333,10 @@ def mostrar_interfaz_radar():
         Envía 8:valor al satélite.
         Esto fuerza al servo a quedarse inmóvil en un ángulo concreto.
         """
-        if mySerial:
-            ang = angulo_entry.get().strip()
-            if ang.isdigit():
-                mensaje = f"8:{ang}"
-                checksum = hacerChecksum(mensaje)
-                mySerial.write(f"{mensaje}|{checksum}\n".encode())
-                print("Ángulo fijo enviado:", mensaje)
+        ang = angulo_entry.get().strip()
+        if ang.isdigit():
+            enviar_comando(f"8:{ang}\n")
+            print("Ángulo fijo enviado:", f"8:{ang}\n".strip())
 
     Button(window, text="Aplicar Ángulo", bg='lightblue',
            command=aplicar_angulo).grid(row=3, column=3)
@@ -411,8 +422,67 @@ def actualizar_grafica_3d():
 
     ventana3d.after(200, actualizar_grafica_3d)
 
+def mostrar_panel_observaciones():
+    limpiar_ventana()
+    Label(window, text="Observaciones del Usuario", font=("Courier", 18)).pack(pady=10)
+    
+    # Caja de texto para escribir la observación
+    observacion_text = Text(window, height=5, width=50)
+    observacion_text.pack(pady=10)
 
+    def guardar_observacion():
+        texto = observacion_text.get("1.0", END).strip()
+        if texto:
+            registrar_evento("Observación", texto)
+            print("Observación guardada")
+            observacion_text.delete("1.0", END)
 
+    Button(window, text="Guardar Observación", bg='lightgreen', command=guardar_observacion).pack(pady=5)
+    Button(window, text="Volver", bg='gray', command=mostrar_menu_principal).pack(pady=5)
+
+def mostrar_eventos():
+    limpiar_ventana()
+
+    Label(window, text="Registro de Eventos",
+          font=("Courier", 18)).pack(pady=10)
+
+    # Filtros
+    Label(window, text="Filtrar por tipo:").pack()
+    tipo_var = StringVar()
+    tipo_menu = OptionMenu(window, tipo_var, "Todos","Comando","Alarma","Observación")
+    tipo_var.set("Todos")
+    tipo_menu.pack()
+
+    Label(window, text="Filtrar por fecha (YYYY-MM-DD):").pack()
+    fecha_entry = Entry(window)
+    fecha_entry.pack()
+
+    # Cuadro de texto donde se muestran los eventos
+    caja = Text(window, width=80, height=20)
+    caja.pack(pady=10)
+
+    def cargar():
+        caja.delete("1.0", END)
+        fecha_filtro = fecha_entry.get().strip()
+        tipo_filtro = tipo_var.get()
+
+        with open(eventos, "r", encoding="utf-8") as f:
+            for linea in f:
+                partes = linea.split("|")
+                fecha = partes[0].strip()
+                tipo = partes[1].strip()
+                texto = partes[2].strip()
+
+                if fecha_filtro and not fecha.startswith(fecha_filtro):
+                    continue
+
+                if tipo_filtro != "Todos" and tipo_filtro != tipo:
+                    continue
+
+                caja.insert(END, linea)
+
+    Button(window, text="Aplicar filtros", command=cargar).pack(pady=5)
+    Button(window, text="Volver", command=mostrar_menu_principal).pack(pady=5)
 # ======================================================
 # ================= COMANDOS TX → SATÉLITE =============
 # ======================================================
@@ -424,32 +494,28 @@ def parar_transmision_temp_hum():
     Le mandamos '1:' (con checksum ya pre-calculado).
     Esto dice al satélite: NO envíes más temp/hum.
     """
-    if mySerial:
-        mySerial.write(b"1:|107\n")
+    enviar_comando("1:|107\n")
 
 def reanudar_transmision_temp_hum():
     """
     '2:' con checksum.
     Dice al satélite que vuelva a enviar temperatura/humedad.
     """
-    if mySerial:
-        mySerial.write(b"2:|108\n")
+    enviar_comando("2:|108\n")
 
 def parar_transmision_dist():
     """
     '3:' con checksum.
     Detiene las lecturas del sensor de distancia.
     """
-    if mySerial:
-        mySerial.write(b"3:|109\n")
+    enviar_comando("3:|109\n")
 
 def reanudar_transmision_dist():
     """
     '4:' con checksum.
     Reactiva la distancia.
     """
-    if mySerial:
-        mySerial.write(b"4:|110\n")
+    enviar_comando("4:|110\n")
 
 
 def enviar_nuevo_periodo_datos_temp_hum():
@@ -461,10 +527,7 @@ def enviar_nuevo_periodo_datos_temp_hum():
     """
     try:
         val = int(periodo_TH_entry.get())
-        if mySerial:
-            mensaje = f"5:{val}"
-            checksum = hacerChecksum(mensaje)
-            mySerial.write(f"{mensaje}|{checksum}\n".encode())
+        enviar_comando(f"5:{val}\n")
     except:
         print("Valor incorrecto periodo TH")
         reproducir_fallo()
@@ -476,10 +539,7 @@ def enviar_nuevo_periodo_datos_dist():
     """
     try:
         val = int(periodo_D_entry.get())
-        if mySerial:
-            mensaje = f"6:{val}"
-            checksum = hacerChecksum(mensaje)
-            mySerial.write(f"{mensaje}|{checksum}\n".encode())
+        enviar_comando(f"6:{val}\n")
     except:
         print("Valor incorrecto periodo Dist")
         reproducir_fallo()
@@ -492,18 +552,17 @@ def hacer_medias_satelite():
     """
     global medias_tierra
     medias_tierra = False
-    if mySerial:
-        mySerial.write(b"10:|155\n")
+    enviar_comando("10:|155\n")
 
 
 def hacer_medias_tierra():
     """
     El usuario decide que las medias las calcule el PC aquí.
+    Esto NO requiere checksum.
     """
     global medias_tierra
     medias_tierra = True
-    if mySerial:
-        mySerial.write(b"11:|\n")
+    enviar_comando("11:\n")
 
 
 # ======================================================
@@ -555,6 +614,7 @@ def leer_datos_serial():
             # Comprobamos integridad
             if checksum_aqui != int(checksum_mensaje):
                 print("El checksum no coincide en el mensaje:", linea)
+                reproducir_fallo("Mensaje corrupto: checksum incorrecto")
                 return None
 
             # Ahora analizamos el mensaje real
@@ -567,7 +627,7 @@ def leer_datos_serial():
 
             elif codigo == "2":  # error temp/hum
                 print("Error en los datos de temp/hum")
-                reproducir_fallo()
+                reproducir_fallo("Error en datos de temperatura/humedad")
                 return None
 
             elif codigo == "3":  # dist/ang
@@ -575,7 +635,7 @@ def leer_datos_serial():
 
             elif codigo == "4":
                 print("Error en los datos de dist")
-                reproducir_fallo()
+                reproducir_fallo("Error en datos de distancia/ángulo")
                 return None
 
             elif codigo == "5":  # medias
@@ -583,7 +643,7 @@ def leer_datos_serial():
 
             elif codigo == "6":
                 print("Error en las medias")
-                reproducir_fallo()
+                reproducir_fallo("Error en medias enviadas por el satélite")
                 return None
 
             elif codigo == "9":  # posición
@@ -651,7 +711,7 @@ def actualizar_todo():
                         jT += 1
                         if jT >= 3:
                             print("Error en las medias")
-                            reproducir_fallo()
+                            reproducir_fallo("Temperatura media supera límite")
                     else:
                         jT = 0
 
@@ -660,7 +720,7 @@ def actualizar_todo():
                         jH += 1
                         if jH >= 3:
                             print("Error en las medias")
-                            reproducir_fallo()
+                            reproducir_fallo("Humedad media supera límite")
                     else:
                         jH = 0
 
