@@ -80,7 +80,7 @@
     pinMode(TRIG, OUTPUT);
     pinMode(ECHO, INPUT);
 
-    // ⬇️ CAMBIO: ahora usamos Serial en vez de enlace
+  
     Serial.begin(115200);
 
     dht.begin();

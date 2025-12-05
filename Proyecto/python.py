@@ -74,10 +74,23 @@ def registrar_evento(tipo, descripcion):
     with open(eventos, "a", encoding="utf-8") as f:
         f.write(f"{ahora} | {tipo} | {descripcion}\n")
 
-def enviar_comando(cmd_str):
+def enviar_comando(mensaje, precalculado=False):
+    """
+    Envía un mensaje al Arduino.
+    Si precalculado=True, el mensaje ya incluye '|CHECKSUM\n' 
+    Si precalculado=False, calcula el checksum y lo añade automáticamente.
+    """
+    if precalculado:
+        paquete = mensaje
+    else:
+        # Eliminamos \n si existe, luego añadimos checksum
+        mensaje = mensaje.strip()
+        checksum = hacerChecksum(mensaje)
+        paquete = f"{mensaje}|{checksum}\n"
+
     if mySerial:
-        mySerial.write(cmd_str.encode())
-        registrar_evento("Comando", cmd_str.strip())
+        mySerial.write(paquete.encode())
+        registrar_evento("Comando", paquete.strip())
 # ======================================================
 # FUNCIÓN PARA REPRODUCIR SONIDO DE FALLO
 # ======================================================
@@ -494,28 +507,28 @@ def parar_transmision_temp_hum():
     Le mandamos '1:' (con checksum ya pre-calculado).
     Esto dice al satélite: NO envíes más temp/hum.
     """
-    enviar_comando("1:|107\n")
+    enviar_comando("1:|107\n", precalculado=True)
 
 def reanudar_transmision_temp_hum():
     """
     '2:' con checksum.
     Dice al satélite que vuelva a enviar temperatura/humedad.
     """
-    enviar_comando("2:|108\n")
+    enviar_comando("2:|108\n", precalculado=True)
 
 def parar_transmision_dist():
     """
     '3:' con checksum.
     Detiene las lecturas del sensor de distancia.
     """
-    enviar_comando("3:|109\n")
+    enviar_comando("3:|109\n", precalculado=True)
 
 def reanudar_transmision_dist():
     """
     '4:' con checksum.
     Reactiva la distancia.
     """
-    enviar_comando("4:|110\n")
+    enviar_comando("4:|110\n", precalculado=True)
 
 
 def enviar_nuevo_periodo_datos_temp_hum():
@@ -552,7 +565,7 @@ def hacer_medias_satelite():
     """
     global medias_tierra
     medias_tierra = False
-    enviar_comando("10:|155\n")
+    enviar_comando("10:|155\n", precalculado=True)
 
 
 def hacer_medias_tierra():
