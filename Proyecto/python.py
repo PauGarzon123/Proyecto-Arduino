@@ -242,7 +242,7 @@ def mostrar_interfaz_temp_hum():
         try:
             tmax = float(temp_entry.get())
             hmax = float(hum_entry.get())
-            enviar_comando(f"12:{tmax}:{hmax}\n")
+            enviar_comando(f"12:{tmax}:{hmax}")
             print("Valores enviados al satélite:", f"12:{tmax}:{hmax}\n".strip())
         except:
             print("Valores incorrectos")
@@ -348,7 +348,7 @@ def mostrar_interfaz_radar():
         """
         ang = angulo_entry.get().strip()
         if ang.isdigit():
-            enviar_comando(f"8:{ang}\n")
+            enviar_comando(f"8:{ang}")
             print("Ángulo fijo enviado:", f"8:{ang}\n".strip())
 
     Button(window, text="Aplicar Ángulo", bg='lightblue',
@@ -540,7 +540,7 @@ def enviar_nuevo_periodo_datos_temp_hum():
     """
     try:
         val = int(periodo_TH_entry.get())
-        enviar_comando(f"5:{val}\n")
+        enviar_comando(f"5:{val}")
     except:
         print("Valor incorrecto periodo TH")
         reproducir_fallo()
@@ -552,7 +552,7 @@ def enviar_nuevo_periodo_datos_dist():
     """
     try:
         val = int(periodo_D_entry.get())
-        enviar_comando(f"6:{val}\n")
+        enviar_comando(f"6:{val}")
     except:
         print("Valor incorrecto periodo Dist")
         reproducir_fallo()
@@ -575,7 +575,7 @@ def hacer_medias_tierra():
     """
     global medias_tierra
     medias_tierra = True
-    enviar_comando("11:\n")
+    enviar_comando("11:|156\n", precalculado=True)
 
 
 # ======================================================
