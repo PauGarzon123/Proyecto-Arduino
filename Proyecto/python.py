@@ -91,9 +91,9 @@ def enviar_comando(mensaje, precalculado=False):
     if mySerial:
         mySerial.write(paquete.encode())
         registrar_evento("Comando", paquete.strip())
-# ======================================================
-# FUNCIÓN PARA REPRODUCIR SONIDO DE FALLO
-# ======================================================
+# ==================================================================
+# FUNCIÓN PARA REPRODUCIR SONIDO DE FALLO y añadirlo a los eventos
+# ==================================================================
 def reproducir_fallo(descripcion="Alarma detectada"):
     registrar_evento("Alarma", descripcion)
     try:
@@ -101,6 +101,7 @@ def reproducir_fallo(descripcion="Alarma detectada"):
         pygame.mixer.music.play()
     except Exception as e:
         print("Error reproduciendo sonido:", e)
+        registrar_evento("Alarma", "Error reproduciendo sonido")
 
 # ======================================================
 # LIMPIAR VENTANA TKINTER
@@ -543,7 +544,7 @@ def enviar_nuevo_periodo_datos_temp_hum():
         enviar_comando(f"5:{val}")
     except:
         print("Valor incorrecto periodo TH")
-        reproducir_fallo()
+        reproducir_fallo("Valor introducido incorrecto de periodo TH")
 
 
 def enviar_nuevo_periodo_datos_dist():
@@ -555,7 +556,7 @@ def enviar_nuevo_periodo_datos_dist():
         enviar_comando(f"6:{val}")
     except:
         print("Valor incorrecto periodo Dist")
-        reproducir_fallo()
+        reproducir_fallo("Valor introducido incorrecto de periodo distancia")
 
 
 def hacer_medias_satelite():
@@ -648,7 +649,7 @@ def leer_datos_serial():
 
             elif codigo == "4":
                 print("Error en los datos de dist")
-                reproducir_fallo("Error en datos de distancia/ángulo")
+                reproducir_fallo("Error en datos de distancia")
                 return None
 
             elif codigo == "5":  # medias
@@ -659,8 +660,18 @@ def leer_datos_serial():
                 reproducir_fallo("Error en medias enviadas por el satélite")
                 return None
 
+            elif codigo == "8":
+                print("Error en los datos del angulo (servo)")
+                reproducir_fallo("Error en datos de angulo")
+                return None
+
             elif codigo == "9":  # posición
                 return codigo, float(trozos[1]), float(trozos[2]), float(trozos[3])
+            
+            elif codigo == "10":
+                print("Error en los datos de posición del satelite")
+                reproducir_fallo("Error en los datos de posición del satelite")
+                return None
 
     return None
 # ======================================================
