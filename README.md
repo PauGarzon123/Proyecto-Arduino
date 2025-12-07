@@ -22,7 +22,7 @@ Esta interfaz ademas permite hacer cambios en la toma de datos como por ejemplo 
 Este cambio se transmite de tierra al satélite para que pueda realizar el cambio.
 
 ## Herramientas  
-### Lenguejes
+### Lenguajes
 ![Static Badge](https://img.shields.io/badge/python-py-yellow?style=for-the-badge&logo=python&logoColor=white)  
 ![Lenguaje](https://img.shields.io/badge/C-C-darkblue?style=for-the-badge&logo=c%2B%2B)  
 ### Hardware y librerias
