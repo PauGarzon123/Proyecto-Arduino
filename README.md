@@ -21,10 +21,20 @@ Este los envia a la estación tierra donde los muestra al usuario mediante una i
 Esta interfaz ademas permite hacer cambios en la toma de datos como por ejemplo un cambio de direccion en el radar.
 Este cambio se transmite de tierra al satélite para que pueda realizar el cambio.
 
-## 🧰 Tecnologías / Herramientas  
-![Static Badge](https://img.shields.io/badge/arduino-ino-blue?style=for-the-badge&logo=arduino&logoColor=white)  
+## Herramientas  
+### Lenguejes
 ![Static Badge](https://img.shields.io/badge/python-py-yellow?style=for-the-badge&logo=python&logoColor=white)  
-![Lenguaje](https://img.shields.io/badge/C++-C-darkblue?style=for-the-badge&logo=c%2B%2B)  
+![Lenguaje](https://img.shields.io/badge/C-C-darkblue?style=for-the-badge&logo=c%2B%2B)  
+### Hardware y librerias
+![Static Badge](https://img.shields.io/badge/arduino-ino-blue?style=for-the-badge&logo=arduino&logoColor=white)  
+[![Static Badge](https://img.shields.io/badge/Numpy-skyblue?style=for-the-badge)](https://numpy.org/)  
+[![Static Badge](https://img.shields.io/badge/Matplotlib-skyblue?style=for-the-badge)](http://matplotlib.org/)  
+[![Static Badge](https://img.shields.io/badge/Datetime-skyblue?style=for-the-badge)](https://docs.python.org/3/library/datetime.html)  
+[![Static Badge](https://img.shields.io/badge/Serial-skyblue?style=for-the-badge)](https://pyserial.readthedocs.io/)  
+[![Static Badge](https://img.shields.io/badge/Time-skyblue?style=for-the-badge)](https://docs.python.org/3/library/time.html)  
+[![Static Badge](https://img.shields.io/badge/pygame-skyblue?style=for-the-badge)](https://www.pygame.org/news)
+
+
 - Librerías externas utilizadas: (si en `libraries/` has incluido librerías, enumerarlas)  
 - (Otras herramientas si aplica: p. ej. scripts Python, herramientas de compilación, etc.)  
 
