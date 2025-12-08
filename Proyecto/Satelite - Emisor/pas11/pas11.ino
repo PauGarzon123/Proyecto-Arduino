@@ -31,11 +31,11 @@
   unsigned long ultimoDatoOKdist = 0;
   unsigned long ultimoDatoOKPos = 0;
 
-  unsigned long periodoTempHum = 500;
-  unsigned long periodoDist = 800;
-  unsigned long periodoPos = 500;
+  unsigned long periodoTempHum = 5200;
+  unsigned long periodoDist = 5300;
+  unsigned long periodoPos = 53000;
 
-  const unsigned long timeoutFallo = 7000;
+  const unsigned long timeoutFallo = 15000;
 
   // ------------ SERVO RADAR ------------
   int angulo = 0;
@@ -81,7 +81,7 @@
     pinMode(ECHO, INPUT);
 
   
-    Serial.begin(115200);
+    Serial.begin(9600);
 
     dht.begin();
     servoMotor.attach(SERVO);
@@ -89,7 +89,6 @@
     r = R_EARTH + ALTITUDE;
     real_orbital_period = 2 * PI * sqrt(pow(r, 3) / (G * M));
 
-    Serial.println("Emisor listo. Esperando comandos START/STOP...");
   }
 
   // ========================================================
@@ -305,7 +304,7 @@
     }
 
     if (transmitirPos && millis() - ultimoDatoOKPos > timeoutFallo) {
-      Serial.println("10:|155");
+      //Serial.println("10:|155");
       ultimoDatoOKPos = millis();
     }
   }
@@ -375,8 +374,18 @@
   // ========================================================
   void loop() {
 
-    if (Serial.available() > 0)
-      procesarComando(Serial.readStringUntil('\n'));
+    // ======== ESCUCHA Y MUESTRA LO QUE LLEGA =========
+    if (Serial.available() > 0) {
+
+      // Leer comando crudo
+      String comandoRecibido = Serial.readStringUntil('\n');
+      comandoRecibido.trim();
+
+      // Procesarlo como siempre
+      procesarComando(comandoRecibido);
+    }
+
+    // ======== RESTO DEL CÓDIGO SIN CAMBIOS =========
 
     if (transmitirTH && millis() - lastReadTH >= periodoTempHum) {
       lastReadTH = millis();
@@ -394,4 +403,5 @@
     }
 
     verificarTimeout();
-  }
+}
+

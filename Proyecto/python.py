@@ -1,4 +1,5 @@
 from tkinter import *
+from matplotlib.image import imread
 import serial, time, matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pygame
@@ -13,7 +14,7 @@ import datetime
 # CONFIGURACIÓN DEL PUERTO SERIE
 # -----------------------------
 device = 'COM9'       # Puerto donde está conectado el Arduino receptor
-BAUDRATE = 115200      # Velocidad de transmisión. Debe coincidir con Arduino.
+BAUDRATE = 9600      # Velocidad de transmisión. Debe coincidir con Arduino.
 
 try:
     # Intentamos abrir el puerto serie
@@ -55,6 +56,12 @@ fig3d = None
 ax3d = None
 canvas3d = None
 ventana3d = None
+
+coords_2d = []
+fig2d = None
+ax2d = None
+canvas2d = None
+
 
 
 # Objetos gráficos del radar
@@ -364,77 +371,145 @@ def mostrar_interfaz_radar():
 
 def abrir_grafica_3d():
     """
-    Abre una ventana nueva con la gráfica 3D de la órbita.
-    Se actualiza automáticamente cuando llega un mensaje 9:x:y:z.
+    Ventana con:
+    - Órbita 3D
+    - Órbita proyectada en mapa 2D
+    - Botones: Imagen simulada / Imagen satelital
     """
     global fig3d, ax3d, canvas3d, ventana3d
+    global fig2d, ax2d, canvas2d, worldmap
 
     ventana3d = Toplevel(window)
-    ventana3d.title("Órbita del Satélite – Modelo 3D")
-    ventana3d.geometry("600x600")
+    ventana3d.title("Órbita del Satélite – 3D + 2D")
+    ventana3d.geometry("1200x600")
 
-    fig3d = plt.figure(figsize=(5.5,5.5))
+    # ---------------------------
+    # LAYOUT DE 2 COLUMNAS
+    # ---------------------------
+    frame_left = Frame(ventana3d)
+    frame_left.pack(side=LEFT, fill=BOTH, expand=True)
+
+    frame_right = Frame(ventana3d)
+    frame_right.pack(side=RIGHT, fill=BOTH, expand=True)
+
+    # ---------------------------
+    # FIGURA 3D
+    # ---------------------------
+    fig3d = plt.figure(figsize=(5,5))
     ax3d = fig3d.add_subplot(111, projection='3d')
 
-    # Dibujamos la Tierra
-    radio = 6371  # km
-    u = np.linspace(0, 2*np.pi, 40)
-    v = np.linspace(0, np.pi, 40)
-    x = radio * np.outer(np.cos(u), np.sin(v))
-    y = radio * np.outer(np.sin(u), np.sin(v))
-    z = radio * np.outer(np.ones(np.size(u)), np.cos(v))
-
-    ax3d.plot_surface(x, y, z, color='b', alpha=0.3)
-
-    ax3d.set_xlabel("X (km)")
-    ax3d.set_ylabel("Y (km)")
-    ax3d.set_zlabel("Z (km)")
-    ax3d.set_title("Posición del Satélite")
-
-    canvas3d = FigureCanvasTkAgg(fig3d, master=ventana3d)
-    canvas3d.get_tk_widget().pack(fill=BOTH, expand=True)
-
-    ventana3d.after(200, actualizar_grafica_3d)
-
-def actualizar_grafica_3d():
-    """
-    Se llama cada 200ms.
-    Dibuja el satélite y su trayectoria.
-    """
-    if ax3d is None or canvas3d is None:
-        return
-
-    ax3d.cla()
-
-    # Dibujar Tierra
+    # Tierra
     radio = 6371
     u = np.linspace(0, 2*np.pi, 40)
     v = np.linspace(0, np.pi, 40)
     x = radio * np.outer(np.cos(u), np.sin(v))
     y = radio * np.outer(np.sin(u), np.sin(v))
-    z = radio * np.outer(np.ones(np.size(u)), np.cos(v))
+    z = radio * np.outer(np.ones(len(u)), np.cos(v))
     ax3d.plot_surface(x, y, z, color='b', alpha=0.3)
 
-    # Si hay datos de posición...
-    if len(coords_3d) > 0:
+    ax3d.set_title("Órbita en 3D")
+
+    canvas3d = FigureCanvasTkAgg(fig3d, master=frame_left)
+    canvas3d.get_tk_widget().pack(fill=BOTH, expand=True)
+
+    # ---------------------------
+    # FIGURA 2D
+    # ---------------------------
+    fig2d, ax2d = plt.subplots(figsize=(6,4))
+
+    # Cargar mapa mundial (lo pongo en tu carpeta actual)
+    map_path = "worldmap.png"
+    if not os.path.exists(map_path):
+        print("⚠ worldmap.png no encontrado. Colócalo en la misma carpeta.")
+    else:
+        worldmap = imread(map_path)
+        ax2d.imshow(worldmap, extent=[-180,180,-90,90])
+    
+    ax2d.set_title("Órbita proyectada en mapa mundial")
+    ax2d.set_xlabel("Longitud")
+    ax2d.set_ylabel("Latitud")
+
+    canvas2d = FigureCanvasTkAgg(fig2d, master=frame_right)
+    canvas2d.get_tk_widget().pack(fill=BOTH, expand=True)
+
+    # ---------------------------
+    # BOTONES
+    # ---------------------------
+    boton_frame = Frame(ventana3d)
+    boton_frame.pack(side=BOTTOM, pady=10)
+
+    Button(boton_frame, text="Imagen simulada",
+           bg="lightblue", width=20).pack(side=LEFT, padx=20)
+
+    Button(boton_frame, text="Imagen satelital",
+           bg="lightgreen", width=20).pack(side=LEFT, padx=20)
+
+    ventana3d.after(200, actualizar_graficas_orbitales)
+
+def actualizar_graficas_orbitales():
+    """
+    Actualiza simultáneamente:
+    - Gráfica 3D
+    - Mapa 2D con órbita proyectada
+    """
+    global coords_3d, coords_2d
+
+    if ax3d is None:
+        return
+
+    # ---------------------------
+    # REINICIAR GRAFICA 3D
+    # ---------------------------
+    ax3d.cla()
+
+    radio = 6371
+    u = np.linspace(0, 2*np.pi, 40)
+    v = np.linspace(0, np.pi, 40)
+    x = radio*np.outer(np.cos(u), np.sin(v))
+    y = radio*np.outer(np.sin(u), np.sin(v))
+    z = radio*np.outer(np.ones(len(u)), np.cos(v))
+    ax3d.plot_surface(x, y, z, color='lightblue', alpha=0.3)
+
+    # Trayectoria 3D
+    if coords_3d:
         xs = [p[0] for p in coords_3d]
         ys = [p[1] for p in coords_3d]
         zs = [p[2] for p in coords_3d]
-
-        # trayectoria
-        ax3d.plot(xs, ys, zs, color='gray')
-
-        # última posición = satélite
-        ax3d.scatter(xs[-1], ys[-1], zs[-1], color='red', s=60)
-
-    ax3d.set_xlabel("X (km)")
-    ax3d.set_ylabel("Y (km)")
-    ax3d.set_zlabel("Z (km)")
-    ax3d.set_title("Posición del Satélite")
+        ax3d.plot(xs, ys, zs, color="red")
+        ax3d.scatter(xs[-1], ys[-1], zs[-1], color="yellow", s=50)
 
     canvas3d.draw()
 
-    ventana3d.after(200, actualizar_grafica_3d)
+    # ---------------------------
+    # ACTUALIZAR MAPA 2D
+    # ---------------------------
+    if ax2d:
+        ax2d.cla()
+        
+        # fondo del mapa
+        if os.path.exists("worldmap.png"):
+            ax2d.imshow(worldmap, extent=[-180,180,-90,90])
+
+        # Convertir puntos 3D→lat/lon
+        lons, lats = [], []
+        for (x,y,z) in coords_3d:
+            lon = np.degrees(np.arctan2(y,x))
+            lat = np.degrees(np.arcsin(z / np.sqrt(x**2+y**2+z**2)))
+            lons.append(lon)
+            lats.append(lat)
+
+        if lons:
+            ax2d.plot(lons, lats, color="red")
+            ax2d.scatter(lons[-1], lats[-1], color="yellow", s=30)
+
+        ax2d.set_xlim(-180, 180)
+        ax2d.set_ylim(-90, 90)
+        ax2d.set_title("Órbita proyectada en mapa 2D")
+
+        canvas2d.draw()
+
+    # repetir refresco
+    ventana3d.after(200, actualizar_graficas_orbitales)
 
 def mostrar_panel_observaciones():
     limpiar_ventana()

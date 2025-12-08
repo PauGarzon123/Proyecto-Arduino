@@ -16,10 +16,10 @@ const int LED_POS     = A0;
 void setup() {
 
   // UART con el SATÉLITE
-  Serial.begin(115200);
+  Serial.begin(9600);
 
   // UART con el PC (FTDI USB-C)
-  puertoPC.begin(115200);
+  puertoPC.begin(9600);
 
   pinMode(LED_ALARMA, OUTPUT);
   pinMode(LED_RASTREO, OUTPUT);
@@ -34,17 +34,16 @@ void setup() {
 void loop() {
 
   // ============================
-  //  DATOS DESDE EL SATÉLITE
+  // 1) DATOS DESDE EL SATÉLITE
   // ============================
-  if (Serial.available() > 0) {
-
+  if (Serial.available()) {
     String datos = Serial.readStringUntil('\n');
     datos.trim();
 
-    // REENVÍA AL PC (via FTDI)
+    // Reenviar al PC
     puertoPC.println(datos);
 
-    // LEDS
+    // LEDs...
     if (datos.startsWith("1:")) { 
       digitalWrite(LED_TH, HIGH);  delay(20); digitalWrite(LED_TH, LOW); 
     }
@@ -70,4 +69,17 @@ void loop() {
     }
   }
 
+
+
+  // ============================
+  // 2) DATOS DESDE EL PC (FTDI)
+  // ============================
+  if (puertoPC.available()) {
+    String comando = puertoPC.readStringUntil('\n');
+    comando.trim();
+
+    // Reenviar al satélite
+    Serial.println(comando);
+  }
 }
+
