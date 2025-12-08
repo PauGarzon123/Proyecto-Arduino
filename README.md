@@ -1,5 +1,5 @@
 <p align="center">
-  <a href=[contributors-url]>
+  <a href="https://github.com/PauGarzon123/Proyecto-Arduino/graphs/contributors">
     <img src="https://img.shields.io/badge/Contribuyentes-3-blue?style=for-the-badge&logo=github" alt="Contribuyentes">
   </a>
 </p>
@@ -26,7 +26,7 @@ Este cambio se transmite de tierra al satélite para que pueda realizar el cambi
 ![Static Badge](https://img.shields.io/badge/python-py-yellow?style=for-the-badge&logo=python&logoColor=white)  
 ![Lenguaje](https://img.shields.io/badge/C-C-darkblue?style=for-the-badge&logo=c%2B%2B)  
 ### Hardware y librerias
-![Static Badge](https://img.shields.io/badge/arduino-ino-blue?style=for-the-badge&logo=arduino&logoColor=white)  
+[![Static Badge](https://img.shields.io/badge/arduino-ino-blue?style=for-the-badge&logo=arduino&logoColor=white)](https://www.arduino.cc/en/software/)  
 [![Static Badge](https://img.shields.io/badge/Numpy-skyblue?style=for-the-badge)](https://numpy.org/)  
 [![Static Badge](https://img.shields.io/badge/Matplotlib-skyblue?style=for-the-badge)](http://matplotlib.org/)  
 [![Static Badge](https://img.shields.io/badge/Datetime-skyblue?style=for-the-badge)](https://docs.python.org/3/library/datetime.html)  
@@ -34,9 +34,12 @@ Este cambio se transmite de tierra al satélite para que pueda realizar el cambi
 [![Static Badge](https://img.shields.io/badge/Time-skyblue?style=for-the-badge)](https://docs.python.org/3/library/time.html)  
 [![Static Badge](https://img.shields.io/badge/pygame-skyblue?style=for-the-badge)](https://www.pygame.org/news)
 
+## Videos del proyecto
 
-- Librerías externas utilizadas: (si en `libraries/` has incluido librerías, enumerarlas)  
-- (Otras herramientas si aplica: p. ej. scripts Python, herramientas de compilación, etc.)  
+1. **Versión 1** – Demostración básica del satélite y estación  
+   [Ver video](https://drive.google.com/file/d/1Z6En6WkZa4Dj-eJ62Kv3MVlINoD3yJOS/view?usp=sharing)
+2. **Versión 2** – Interacción avanzada con la interfaz gráfica  
+   [Ver video](https://drive.google.com/file/d/1hKNK0I4ORd2DQYQc4liZ1lFfx9cRLFUs/view?usp=sharing)
+3. **Versión 3** – Integración completa del satélite y estación  
+   [Ver video](https://drive.google.com/file/d/1fx8jCaYvltBJq02DE8GkxMYV_DyTs3j7/view?usp=sharing)
 
-## 📂 Estructura del repositorio  
-[contributors-url]: https://github.com/PauGarzon123/Proyecto-Arduino/graphs/contributors
