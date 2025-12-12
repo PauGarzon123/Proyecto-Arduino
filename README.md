@@ -23,7 +23,7 @@ Este cambio se transmite de tierra al satélite para que pueda realizar el cambi
 
 ## Herramientas  
 ### Lenguajes
-![Static Badge](https://img.shields.io/badge/python-py-yellow?style=for-the-badge&logo=python&logoColor=white)  
+[![Static Badge](https://img.shields.io/badge/python-py-yellow?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)  
 ![Lenguaje](https://img.shields.io/badge/C-C-darkblue?style=for-the-badge&logo=c%2B%2B)  
 ### Hardware y librerias
 [![Static Badge](https://img.shields.io/badge/arduino-ino-blue?style=for-the-badge&logo=arduino&logoColor=white)](https://www.arduino.cc/en/software/)  
@@ -34,8 +34,18 @@ Este cambio se transmite de tierra al satélite para que pueda realizar el cambi
 [![Static Badge](https://img.shields.io/badge/Time-skyblue?style=for-the-badge)](https://docs.python.org/3/library/time.html)  
 [![Static Badge](https://img.shields.io/badge/pygame-skyblue?style=for-the-badge)](https://www.pygame.org/news)
 
-## Videos del proyecto
 
+##  Instalación
+### 1. Instalación de Visual Studio Code y el lenguaje C  
+   [Ver video](https://www.youtube.com/watch?v=qQT-6WufAEE)
+### 2. Instalación de Python  
+   [Ver video](https://www.youtube.com/watch?v=HJErA1k95k8)
+### 3. Clonar el repositorio
+`git clone https://github.com/PauGarzon123/Proyecto-Arduino.git
+cd Proyecto-Arduino`
+
+
+## Videos del proyecto
 1. **Versión 1** – Demostración básica del satélite y estación  
    [Ver video](https://drive.google.com/file/d/1Z6En6WkZa4Dj-eJ62Kv3MVlINoD3yJOS/view?usp=sharing)
 2. **Versión 2** – Interacción avanzada con la interfaz gráfica  
