@@ -1,5 +1,10 @@
   #include <DHT.h>
   #include <Servo.h>
+  #include <Wire.h>
+  #include <SPI.h>
+  #include <ArduCAM.h>
+  #include "memorysaver.h"
+
 
   // ------------ DEFINICIÓN DE PINES ------------
   #define DHTPIN 6
@@ -7,6 +12,12 @@
   #define TRIG 4
   #define ECHO 5
   #define SERVO 3
+  #define CS_PIN 7
+  #define PACKET_SIZE 32
+  #define INTERVALO_IMAGEN 4000
+
+  ArduCAM myCAM(OV2640, CS_PIN);
+  bool modoImagen = false;
 
   DHT dht(DHTPIN, DHTTYPE);
   Servo servoMotor;
@@ -31,11 +42,11 @@
   unsigned long ultimoDatoOKdist = 0;
   unsigned long ultimoDatoOKPos = 0;
 
-  unsigned long periodoTempHum = 5200;
-  unsigned long periodoDist = 5300;
-  unsigned long periodoPos = 53000;
+  unsigned long periodoTempHum = 10200;
+  unsigned long periodoDist =13000;
+  unsigned long periodoPos = 15000;
 
-  const unsigned long timeoutFallo = 15000;
+  const unsigned long timeoutFallo = 150000;
 
   // ------------ SERVO RADAR ------------
   int angulo = 0;
@@ -76,6 +87,16 @@
   // ====================== SETUP ===========================
   // ========================================================
   void setup() {
+    Wire.begin();
+    SPI.begin();
+    pinMode(CS_PIN, OUTPUT);
+    digitalWrite(CS_PIN, HIGH);
+
+    myCAM.set_format(JPEG);
+    myCAM.InitCAM();
+    myCAM.OV2640_set_JPEG_size(OV2640_160x120);
+    myCAM.clear_fifo_flag();
+
     pinMode(led1, OUTPUT);
     pinMode(TRIG, OUTPUT);
     pinMode(ECHO, INPUT);
@@ -367,41 +388,130 @@
       valorlimiteH = params.substring(pos + 1).toFloat();
     }
   }
+  // ================= CRC-8 BINARIO =================
+uint8_t crc8(uint8_t *data, int len) {
+  uint8_t crc = 0;
+  for (int i = 0; i < len; i++) crc ^= data[i];
+  return crc;
+}
+
+// ================= BYTE → HEX =================
+String toHex(byte b) {
+  const char hexmap[] = "0123456789ABCDEF";
+  String s = "";
+  s += hexmap[b >> 4];
+  s += hexmap[b & 0x0F];
+  return s;
+}
+
+// ================= ESPERA ACK =================
+bool waitForACK(uint16_t id) {
+  unsigned long start = millis();
+  String esperado = "ACK " + String(id);
+
+  while (millis() - start < 5000) {
+    if (Serial.available()) {
+      String rx = Serial.readStringUntil('\n');
+      rx.trim();
+      if (rx == esperado) return true;
+    }
+  }
+  return false;
+}
+
+// ================= ENVIO DE IMAGEN =================
+void enviarImagen() {
+
+  myCAM.flush_fifo();
+  myCAM.clear_fifo_flag();
+  myCAM.start_capture();
+  while (!myCAM.get_bit(ARDUCHIP_TRIG, CAP_DONE_MASK));
+
+  uint32_t length = myCAM.read_fifo_length();
+  if (length == 0) return;
+
+  uint16_t pid = 0;
+  uint32_t index = 0;
+
+  myCAM.CS_LOW();
+
+  while (index < length) {
+
+    uint8_t raw[PACKET_SIZE];
+    int raw_len = 0;
+
+    while (raw_len < PACKET_SIZE && index < length) {
+      raw[raw_len++] = myCAM.read_fifo();
+      index++;
+    }
+
+    uint8_t crc = crc8(raw, raw_len);
+
+    String msg = "99:" + String(pid) + ":";
+    for (int i = 0; i < raw_len; i++) msg += toHex(raw[i]);
+    msg += ":" + String(crc);
+
+    Serial.println(msg);
+
+    if (!waitForACK(pid)) continue;
+
+    delay(INTERVALO_IMAGEN);  // ⏱️ LoRa-safe
+    pid++;
+  }
+
+  myCAM.CS_HIGH();
+}
+
 
 
   // ========================================================
   // ======================== LOOP ===========================
   // ========================================================
-  void loop() {
+void loop() {
 
-    // ======== ESCUCHA Y MUESTRA LO QUE LLEGA =========
-    if (Serial.available() > 0) {
+  // ======== ESCUCHA Y MUESTRA LO QUE LLEGA =========
+  if (Serial.available() > 0) {
 
-      // Leer comando crudo
-      String comandoRecibido = Serial.readStringUntil('\n');
-      comandoRecibido.trim();
+    // Leer comando crudo
+    String comandoRecibido = Serial.readStringUntil('\n');
+    comandoRecibido.trim();
 
+    // 🔴 COMANDO ESPECIAL IMAGEN
+    if (comandoRecibido == "99:") {
+      modoImagen = true;
+    } 
+    else {
       // Procesarlo como siempre
       procesarComando(comandoRecibido);
     }
+  }
 
-    // ======== RESTO DEL CÓDIGO SIN CAMBIOS =========
+  // ======== MODO IMAGEN (EXCLUSIVO) =========
+  if (modoImagen) {
+    enviarImagen();      // 📷 envío bloqueante de imagen
+    modoImagen = false;  // volver a modo normal
+    return;              // ⛔ no ejecutar nada más este loop
+  }
 
-    if (transmitirTH && millis() - lastReadTH >= periodoTempHum) {
-      lastReadTH = millis();
-      leerTemperaturaHumedad();
-    }
+  // ======== RESTO DEL CÓDIGO SIN CAMBIOS =========
 
-    if (transmitirDist && millis() - lastReadDist >= periodoDist) {
-      lastReadDist = millis();
-      leerDistancia();
-    }
+  if (transmitirTH && millis() - lastReadTH >= periodoTempHum) {
+    lastReadTH = millis();
+    leerTemperaturaHumedad();
+  }
 
-    if (transmitirPos && millis() - lastReadPos >= periodoPos) {
-      lastReadPos = millis();
-      simularPosicion(millis(), 0, 0);
-    }
+  if (transmitirDist && millis() - lastReadDist >= periodoDist) {
+    lastReadDist = millis();
+    leerDistancia();
+  }
 
-    verificarTimeout();
+  if (transmitirPos && millis() - lastReadPos >= periodoPos) {
+    lastReadPos = millis();
+    double inclinacion = 51.6 * PI / 180.0;
+    simularPosicion(millis(), inclinacion, 0);
+  }
+
+  verificarTimeout();
 }
+
 

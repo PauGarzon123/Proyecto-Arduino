@@ -9,6 +9,14 @@ import sys
 import re
 import os
 import datetime
+from PIL import Image, ImageTk
+from tkinter import Label
+import math
+import requests
+import io
+
+
+
 
 # -----------------------------
 # CONFIGURACIÓN DEL PUERTO SERIE
@@ -48,7 +56,12 @@ idx = 0
 tmax, hmax = 100, 100   # Límites por defecto
 N = 10                  # Usamos 10 valores para hacer medias
 tempCola = [0]*N        # Lista circular para medias de temperatura
-humCola = [0]*N         # Lista circular para medias de humedad
+humCola = [0]*N        # Lista circular para medias de humedad
+
+
+modo_imagen = False
+
+
 
 # ==================== VARIABLES PARA 3D ====================
 coords_3d = []       # aquí guardamos puntos (x,y,z) que llegan del satélite
@@ -368,83 +381,180 @@ def mostrar_interfaz_radar():
 # ======================================================
 # ==================== GRÁFICA 3D ======================
 # ======================================================
-
 def abrir_grafica_3d():
-    """
-    Ventana con:
-    - Órbita 3D
-    - Órbita proyectada en mapa 2D
-    - Botones: Imagen simulada / Imagen satelital
-    """
-    global fig3d, ax3d, canvas3d, ventana3d
-    global fig2d, ax2d, canvas2d, worldmap
+    global fig3d, ax3d, canvas3d
+    global fig2d, ax2d, canvas2d, ventana3d, worldmap
 
     ventana3d = Toplevel(window)
-    ventana3d.title("Órbita del Satélite – 3D + 2D")
-    ventana3d.geometry("1200x600")
+    ventana3d.title("🛰 Órbita del Satélite – Visualización")
+    ventana3d.geometry("1300x720")
+    ventana3d.configure(bg="#F2F2F2")
 
-    # ---------------------------
-    # LAYOUT DE 2 COLUMNAS
-    # ---------------------------
-    frame_left = Frame(ventana3d)
-    frame_left.pack(side=LEFT, fill=BOTH, expand=True)
+    # ==================================================
+    # FRAME SUPERIOR → GRÁFICAS
+    # ==================================================
+    frame_graficas = Frame(ventana3d, bg="#F2F2F2")
+    frame_graficas.pack(side=TOP, fill=BOTH, expand=True, padx=10, pady=10)
 
-    frame_right = Frame(ventana3d)
-    frame_right.pack(side=RIGHT, fill=BOTH, expand=True)
+    frame_left = Frame(frame_graficas, bg="white", bd=2, relief="groove")
+    frame_left.pack(side=LEFT, fill=BOTH, expand=True, padx=8)
 
-    # ---------------------------
-    # FIGURA 3D
-    # ---------------------------
-    fig3d = plt.figure(figsize=(5,5))
+    frame_right = Frame(frame_graficas, bg="white", bd=2, relief="groove")
+    frame_right.pack(side=RIGHT, fill=BOTH, expand=True, padx=8)
+
+    Label(frame_left, text="Órbita 3D", font=("Arial", 16, "bold"),
+          bg="white").pack(pady=6)
+
+    Label(frame_right, text="Proyección en mapa mundial",
+          font=("Arial", 16, "bold"),
+          bg="white").pack(pady=6)
+
+    # =================== FIGURA 3D ===================
+    fig3d = plt.figure(figsize=(5, 5))
     ax3d = fig3d.add_subplot(111, projection='3d')
 
-    # Tierra
     radio = 6371
     u = np.linspace(0, 2*np.pi, 40)
     v = np.linspace(0, np.pi, 40)
     x = radio * np.outer(np.cos(u), np.sin(v))
     y = radio * np.outer(np.sin(u), np.sin(v))
     z = radio * np.outer(np.ones(len(u)), np.cos(v))
-    ax3d.plot_surface(x, y, z, color='b', alpha=0.3)
-
-    ax3d.set_title("Órbita en 3D")
+    ax3d.plot_surface(x, y, z, color='steelblue', alpha=0.35)
 
     canvas3d = FigureCanvasTkAgg(fig3d, master=frame_left)
     canvas3d.get_tk_widget().pack(fill=BOTH, expand=True)
 
-    # ---------------------------
-    # FIGURA 2D
-    # ---------------------------
-    fig2d, ax2d = plt.subplots(figsize=(6,4))
+    # =================== FIGURA 2D ===================
+    fig2d, ax2d = plt.subplots(figsize=(6, 4))
 
-    # Cargar mapa mundial (lo pongo en tu carpeta actual)
     map_path = "worldmap.png"
-    if not os.path.exists(map_path):
-        print("⚠ worldmap.png no encontrado. Colócalo en la misma carpeta.")
-    else:
+    if os.path.exists(map_path):
         worldmap = imread(map_path)
-        ax2d.imshow(worldmap, extent=[-180,180,-90,90])
-    
-    ax2d.set_title("Órbita proyectada en mapa mundial")
+        ax2d.imshow(worldmap, extent=[-180, 180, -90, 90])
+    else:
+        ax2d.text(0.5, 0.5, "worldmap.png no encontrado",
+                  transform=ax2d.transAxes,
+                  ha="center", va="center", fontsize=12)
+
     ax2d.set_xlabel("Longitud")
     ax2d.set_ylabel("Latitud")
 
     canvas2d = FigureCanvasTkAgg(fig2d, master=frame_right)
     canvas2d.get_tk_widget().pack(fill=BOTH, expand=True)
 
-    # ---------------------------
-    # BOTONES
-    # ---------------------------
-    boton_frame = Frame(ventana3d)
-    boton_frame.pack(side=BOTTOM, pady=10)
+    # ==================================================
+    # FRAME INFERIOR → BOTONES (FIJO Y VISIBLE)
+    # ==================================================
+    frame_botones = Frame(ventana3d, bg="#E0E0E0", height=90)
+    frame_botones.pack(side=BOTTOM, fill=X)
+    frame_botones.pack_propagate(False)
 
-    Button(boton_frame, text="Imagen simulada",
-           bg="lightblue", width=20).pack(side=LEFT, padx=20)
+    Button(
+        frame_botones,
+        text="🧪 Imagen simulada",
+        font=("Arial", 15, "bold"),
+        bg="#3498DB",
+        fg="white",
+        width=24,
+        height=2,
+        command=imagen_simulada
+    ).pack(side=LEFT, padx=180, pady=15)
 
-    Button(boton_frame, text="Imagen satelital",
-           bg="lightgreen", width=20).pack(side=LEFT, padx=20)
+    Button(
+        frame_botones,
+        text="📷 Imagen satelital REAL",
+        font=("Arial", 15, "bold"),
+        bg="#2ECC71",
+        fg="white",
+        width=24,
+        height=2,
+        command=pedir_imagen_real
+    ).pack(side=RIGHT, padx=180, pady=15)
 
     ventana3d.after(200, actualizar_graficas_orbitales)
+
+
+def imagen_simulada():
+    if not coords_3d:
+        print("❌ No hay coordenadas del satélite todavía")
+        return
+
+    # ===============================
+    # CONFIGURACIÓN PLANET
+    # ===============================
+    API_KEY = "PLAK7b06c78504f84f4fbdfba3383de0aee7"
+    MOSAIC_ID = "global_monthly_2020_02_mosaic"
+    zoom = 12
+
+    # ===============================
+    # OBTENER LAT / LON DEL SATÉLITE
+    # ===============================
+    x, y, z = coords_3d[-1]   # última posición
+    lat, lon = xyz_to_latlon(x, y, z)
+
+    print(f"🌍 Lat={lat:.4f}, Lon={lon:.4f}")
+
+    # ===============================
+    # CALCULAR TILE
+    # ===============================
+    tx, ty = deg2num(lat, lon, zoom)
+
+    tile_url = (
+        f"https://tiles.planet.com/basemaps/v1/"
+        f"planet-tiles/{MOSAIC_ID}/gmap/{zoom}/{tx}/{ty}.png"
+        f"?api_key={API_KEY}"
+    )
+
+    print("⬇ Descargando tile Planet:")
+    print(tile_url)
+
+    # ===============================
+    # DESCARGA
+    # ===============================
+    response = requests.get(tile_url)
+
+    if response.status_code != 200:
+        print("❌ No existe imagen en este tile")
+        return
+
+    img = Image.open(io.BytesIO(response.content))
+
+    # Tile vacío (PNG transparente)
+    if img.mode == "RGBA":
+        if all(p[3] == 0 for p in img.getdata()):
+            print("⚠ Tile vacío (sin datos)")
+            return
+
+    # ===============================
+    # GUARDAR
+    # ===============================
+    img.save("planet_tile.png")
+    print("✔ Guardado como planet_tile.png")
+
+    # ===============================
+    # MOSTRAR EN TKINTER
+    # ===============================
+    mostrar_imagen_tk(img, lat, lon)
+
+#Mostrar imagen TK
+
+def mostrar_imagen_tk(img, lat, lon):
+    top = Toplevel(window)
+    top.title("🛰 Imagen satelital (Planet)")
+
+    img = img.resize((600, 600))
+    foto = ImageTk.PhotoImage(img)
+
+    Label(
+        top,
+        text=f"Lat: {lat:.4f}  |  Lon: {lon:.4f}",
+        font=("Arial", 12, "bold")
+    ).pack(pady=5)
+
+    lbl = Label(top, image=foto)
+    lbl.image = foto   # MUY IMPORTANTE
+    lbl.pack(padx=10, pady=10)
+
 
 def actualizar_graficas_orbitales():
     """
@@ -572,6 +682,118 @@ def mostrar_eventos():
 
     Button(window, text="Aplicar filtros", command=cargar).pack(pady=5)
     Button(window, text="Volver", command=mostrar_menu_principal).pack(pady=5)
+# XYZ_TO_LAT 
+
+def xyz_to_latlon(x, y, z):
+    r = math.sqrt(x*x + y*y + z*z)
+    lat = math.degrees(math.asin(z / r))
+    lon = math.degrees(math.atan2(y, x))
+    return lat, lon
+
+#deg2num
+
+def deg2num(lat_deg, lon_deg, zoom):
+    lat_rad = math.radians(lat_deg)
+    n = 2.0 ** zoom
+    x = int((lon_deg + 180.0) / 360.0 * n)
+    y = int((1.0 - math.log(math.tan(lat_rad) + 1/math.cos(lat_rad)) / math.pi) / 2.0 * n)
+    return x, y
+
+
+# IMAGEN_REAL_SATELITE
+
+def pedir_imagen_real():
+    global modo_imagen
+
+    modo_imagen = True
+    print("📷 Sol·licitant imatge real...")
+
+    # 1️⃣ Enviar comanda al satèl·lit
+    mySerial.write(b"99:\n")
+
+    # 2️⃣ Rebre imatge (mateix codi que ja funciona)
+    buffer = bytearray()
+    recibiendo = False
+    esperado_pid = 0
+
+    while True:
+        line = mySerial.readline().decode(errors="ignore").strip()
+        if not line:
+            continue
+
+        if not line.startswith("99:"):
+            continue
+
+        partes = line.split(":")
+        if len(partes) != 4:
+            continue
+
+        _, pid_str, hexdata, crc_str = partes
+
+        try:
+            pid = int(pid_str)
+            crc_rx = int(crc_str)
+        except:
+            continue
+
+        if pid != esperado_pid:
+            continue
+
+        if len(hexdata) % 2 != 0:
+            continue
+
+        try:
+            data = bytes.fromhex(hexdata)
+        except:
+            continue
+
+        # CRC-8 XOR
+        crc = 0
+        for b in data:
+            crc ^= b
+
+        if crc != crc_rx:
+            continue
+
+        # ACK
+        mySerial.write(f"ACK {pid}\n".encode())
+
+        if not recibiendo:
+            for i in range(len(data) - 1):
+                if data[i] == 0xFF and data[i+1] == 0xD8:
+                    recibiendo = True
+                    buffer.clear()
+                    buffer.extend(data[i:])
+                    print("🟢 FF D8 detectat (inici JPEG)")
+                    break
+        else:
+            buffer.extend(data)
+
+        idx = buffer.find(b'\xFF\xD9')
+        if recibiendo and idx != -1:
+            jpeg = buffer[:idx+2]
+            with open("foto.jpg", "wb") as f:
+                f.write(jpeg)
+            print("🔵 FF D9 detectat (fi JPEG)")
+            break
+
+        esperado_pid += 1
+
+    modo_imagen = False
+    mostrar_imagen_real("foto.jpg")
+
+
+def mostrar_imagen_real(ruta):
+    img = Image.open(ruta)
+    img = img.resize((400, 300))  # ajusta si vols
+    img_tk = ImageTk.PhotoImage(img)
+
+    label_imagen.config(image=img_tk, text="")
+    label_imagen.image = img_tk
+
+
+
+
 # ======================================================
 # ================= COMANDOS TX → SATÉLITE =============
 # ======================================================
@@ -686,10 +908,17 @@ def leer_datos_serial():
     - '5:27.4:38.1|150'  → medias
     - '9:X:Y:Z|111'      → posición
     """
+    if modo_imagen:
+        return   # 🔴 NO llegir res durant imatge
+    
+
 
     if mySerial and mySerial.in_waiting > 0:
 
         linea = mySerial.readline().decode('utf-8', errors='ignore').strip()
+
+        if linea.startswith("99:"):
+            return None
 
         if linea:
             # Separar mensaje y checksum
@@ -947,6 +1176,11 @@ def actualizar_posicion(x, y, z):
 window = Tk()
 window.geometry("850x480")
 window.title("Estación de Tierra")
+
+#Imagen Real
+
+label_imagen = Label(window, text="(Sense imatge encara)")
+label_imagen.pack(pady=10)
 
 # Mostramos la pantalla principal al inicio
 mostrar_menu_principal()
