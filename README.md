@@ -40,9 +40,16 @@ Este cambio se transmite de tierra al satélite para que pueda realizar el cambi
    [Ver video](https://www.youtube.com/watch?v=qQT-6WufAEE)
 ### 2. Instalación de Python  
    [Ver video](https://www.youtube.com/watch?v=HJErA1k95k8)
-### 3. Clonar el repositorio
-`git clone https://github.com/PauGarzon123/Proyecto-Arduino.git
-cd Proyecto-Arduino`
+### 3.Instalación Arduino IDE  
+  [Página oficial de Arduino](https://www.arduino.cc/en/software)
+   
+### 4. Clonar el repositorio
+```bash
+git clone https://github.com/PauGarzon123/Proyecto-Arduino.git
+cd Proyecto-Arduino
+```
+
+
 
 
 ## Videos del proyecto
