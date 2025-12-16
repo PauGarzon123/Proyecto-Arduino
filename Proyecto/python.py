@@ -1174,7 +1174,7 @@ def actualizar_posicion(x, y, z):
 # ======================= MAIN =========================
 # ======================================================
 window = Tk()
-window.geometry("850x480")
+window.geometry("950x680")
 window.title("Estación de Tierra")
 
 #Imagen Real
@@ -1186,4 +1186,5 @@ label_imagen.pack(pady=10)
 mostrar_menu_principal()
 
 # Arrancamos el loop de Tkinter
+
 window.mainloop()
