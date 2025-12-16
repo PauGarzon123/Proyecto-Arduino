@@ -145,8 +145,8 @@ def mostrar_menu_principal():
     - Sensor de distancia / radar
     """
     limpiar_ventana()
-
-    Label(window, text="Menú principal", font=("Courier", 25)).pack(pady=40)
+    window.configure(bg="#D2E3ED") 
+    Label(window, text="Menú principal", font=("Courier", 25),bg="#D2E3ED",fg="#1F3A5F",padx=20,pady=10,relief="ridge",bd=3).pack(pady=40)
 
     Button(window, text="Temperatura y Humedad",
            font=("Arial", 16), bg='#0077B6',
