@@ -105,7 +105,7 @@ En esta versión también incorporamos la simulación y la visualización de la 
   
 Esta última versión, al ser un poco más compleja, la resumimos, pero para los interesados, más abajo la vamos a explicar entera. 
 
-## Resumen
+#### Resumen
 En la versión 4, Integramos todas las funcionalidades previas y añadido mejoras importantes en comunicación, simulación de órbitas y manejo de imágenes.
 Hemos implementado la comunicación entre Arduinos y con la estación de tierra utilizando pines UART y un convertidor USB–Serial FT232RL. La estación de tierra, desarrollada en Python, recibe nuestros comandos y nos permite enviar datos de manera estable y confiable.
   
@@ -115,8 +115,33 @@ Hemos añadido una cámara en el satélite, capaz de capturar imágenes bajo dem
 
 Finalmente, completamos el envío de imágenes entre el satélite y la estación de tierra, transmitiendo los datos mediante la comunicación serial y procesándolos en Python. Esto simula de manera aproximada la operación de un satélite de observación real, integrando telemetría, control y transmisión de datos.
 
-## Explicación extensa  
-### Comunicación  
+#### Explicación extensa  
+
+1. COMUNICACIÓN  
+
 En nuestro proyecto, la comunicación se divide en dos partes. El primer paso corresponde a la comunicación entre la estación de tierra y el ordenador, mientras que el segundo tramo es la comunicación inalámbrica entre el satélite y la estación de tierra, que se realiza mediante el kit LoRa.
 
-Para permitir la comunicación entre el Arduino de la estación de tierra y el ordenador, se utiliza un convertidor USB–Serial (UART), concretamente un chip FT232RL. Este componente es necesario porque el ordenador trabaja con USB, mientras que el Arduino utiliza comunicación serie asíncrona. El convertidor actúa como traductor entre estos dos sistemas y permite que el software en Python pueda recibir y enviar datos correctamente.
+Para permitir la comunicación entre el Arduino de la estación de tierra y el ordenador, se utiliza un convertidor USB–Serial (UART), concretamente un chip FT232RL. Este componente es necesario porque el ordenador trabaja con USB, mientras que el Arduino utiliza comunicación serie asíncrona. El convertidor actúa como traductor entre estos dos sistemas y permite que el software en Python pueda recibir y enviar datos correctamente.  
+
+![USB-Serial](images/UART.png)  
+
+En el montaje concreto de nuestro proyecto, los pines RX y TX (0 y 1) del Arduino no se utilizan para la comunicación directa con el ordenador, sino que están conectados al módulo LoRa. Esto hace que toda la comunicación entre el satélite y la estación de tierra dependa de las características de este sistema de radio. El LoRa está diseñado para comunicaciones de bajo consumo, lo que implica trabajar con bitrates bajos y una transmisión de datos relativamente lenta, especialmente en el envío de imágenes.
+
+Esta limitación de velocidad no proviene de los pines RX/TX, sino del canal de radio utilizado. Si el proyecto no utilizara LoRa, o si se dispusiera de un sistema de transmisión con una antena más potente, se podría aprovechar la misma comunicación serie para enviar información a una velocidad mucho más elevada.
+
+Finalmente, no se conectan ambos Arduinos directamente al PC mediante USB. Dado que los puertos USB de los Arduinos utilizan internamente comunicación serie, conectar ambos al mismo ordenador podría provocar conflictos y dificultar el control de la comunicación. Por este motivo, se mantiene un único enlace USB–Serial en la estación de tierra, mientras que la comunicación con el satélite se realiza exclusivamente a través del canal LoRa. Esta arquitectura permite separar claramente cada enlace y mantener un sistema estable y coherente.  
+  
+2.ÓRBITA 3D Y D2  
+
+En esta parte del proyecto se ha implementado una representación visual de la órbita del satélite en dos formatos diferentes: una visualización tridimensional (3D) y una proyección bidimensional (2D) sobre un mapa real de la Tierra. Esta doble representación tiene como objetivo facilitar la comprensión del movimiento del satélite tanto desde un punto de vista espacial como geográfico.
+
+La visualización en 3D muestra la Tierra como una esfera, utilizando un radio aproximado de 6371 km, que corresponde al radio medio real del planeta. Esta esfera actúa como referencia física y permite entender que el satélite no se mueve sobre un plano, sino que orbita. Para construir esta representación, se generan puntos sobre la superficie de una esfera mediante coordenadas paramétricas, que posteriormente se dibujan en un entorno 3D.
+
+Estas dos representaciones también se utilizan como herramienta de seguimiento del satélite dentro de la órbita simulada. Tal como se mostrará más adelante con imágenes, el satélite calcula y simula el movimiento orbital, y estas gráficas permiten visualizar en cada momento en qué punto de la órbita se encuentra.
+
+Esta representación tridimensional permite visualizar claramente la forma de la Tierra y comprender conceptos del espacio en el que se mueve el satélite. Aunque la órbita no está dibujada explícitamente en este fragmento, esta esfera sirve como base sobre la cual se puede representar el movimiento orbital.  
+
+<p align="center">
+  <img src="images/grafica3d1.png" width="300">
+  <img src="images/codigo3d1.png" width="350">
+</p>
