@@ -14,7 +14,7 @@ Proyecto basado en Arduino que simula un sistema satelital formado principalmete
 En el proyecto el satelite se encarga de recoger datos como la humedad, distancia o temperatura.  
 Este los envia a la estación tierra donde los muestra al usuario mediante una interfaz grafica.
 
-Esta interfaz ademas permite hacer cambios en la toma de datos como por ejemplo un cambio de direccion en el radar.
+Esta interfaz además permite hacer cambios en la toma de datos como por ejemplo un cambio de direccion en el radar.
 Este cambio se transmite de tierra al satélite para que pueda realizar el cambio.
 
 ## Herramientas  
@@ -69,11 +69,13 @@ pip install numpy matplotlib pygame pyserial pillow requests
 
 ### 8.Montar el circuito  
 Montar el circuito tal como se muestra en la imagen.
-
+  
 ![Montaje del proyecto](images/montaje.png)
 
 ## Protocolo de comunicación 
 El protocolo define cómo se intercambian datos y comandos entre el satélite (Arduino) y la estación tierra (Python GUI).
+  
+![Protocolo de comuicación](images/protocolo.png)
 
 
 ## Versiones del proyecto
@@ -97,4 +99,18 @@ Con la versión 3, completamos todas las funcionalidades principales. Combinamos
 Para mejorar la velocidad de comunicación entre la estación tierra y el satélite, utilizamos un módulo adaptador USB–Serial, que permitió acelerar la transmisión de datos y reducir retrasos. Además, implementamos la comunicación inalámbrica mediante LoRa, lo que nos permitió enviar y recibir datos y comandos de forma estable sin depender de conexión directa por USB.Para garantizar la integridad de los datos transmitidos, añadimos un checksum en cada mensaje, de manera que la estación tierra pudiera verificar que los datos recibidos eran correctos antes de procesarlos. Esto nos aseguró que los comandos y los datos de los sensores se recibieran sin errores, incluso con la limitación de velocidad del canal LoRa.  
   
 Otra gran incorporación que hicimos fue el registro de eventos. Todos los eventos se registran en un historial dentro de la interfaz, permitiéndonos revisar qué acciones se han ejecutado y en qué momento, lo que facilita la depuración y el seguimiento del funcionamiento del sistema.  
-En esta versión también incorporamos la simulación y la visualización de la órbita del satélite. Calculamos su posición en cada instante simulando su movimiento orbital y generando la representacion en una grafica.
+En esta versión también incorporamos la simulación y la visualización de la órbita del satélite. Calculamos su posición en cada instante simulando su movimiento orbital y generando la representacion en una grafica.  
+### **Versión 4**
+[Ver video]  
+  
+Esta última versión, al ser un poco más compleja, la resumimos, pero para los interesados, más abajo la vamos a explicar entera. 
+  
+En la versión 4, Integramos todas las funcionalidades previas y añadido mejoras importantes en comunicación, simulación de órbitas y manejo de imágenes.
+Hemos implementado la comunicación entre Arduinos y con la estación de tierra utilizando pines UART y un convertidor USB–Serial FT232RL. La estación de tierra, desarrollada en Python, recibe nuestros comandos y nos permite enviar datos de manera estable y confiable.
+  
+También incorporamos órbitas en 3D y 2D, mostrando la trayectoria del satélite alrededor de la Tierra y su proyección sobre un plano real. Esto nos permite visualizar con precisión su posición y movimiento, combinando simulación y representación gráfica de manera realista.
+  
+Hemos añadido una cámara en el satélite, capaz de capturar imágenes bajo demanda. Para ello, hemos colocado dos botones físicos, “Imagen Simulada” y “Imagen Real”, que nos permiten seleccionar si enviamos una fotografía real capturada por la cámara o una imagen atomada de la base de datos del satélite europeo Copernicus, utilizada para pruebas y demostraciones cuando no se requiere una fotografía real.
+
+Finalmente, completamos el envío de imágenes entre el satélite y la estación de tierra, transmitiendo los datos mediante la comunicación serial y procesándolos en Python. Esto simula de manera aproximada la operación de un satélite de observación real, integrando telemetría, control y transmisión de datos.
+
