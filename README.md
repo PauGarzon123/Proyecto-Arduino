@@ -104,7 +104,8 @@ En esta versión también incorporamos la simulación y la visualización de la 
 [Ver video]  
   
 Esta última versión, al ser un poco más compleja, la resumimos, pero para los interesados, más abajo la vamos a explicar entera. 
-  
+
+## Resumen
 En la versión 4, Integramos todas las funcionalidades previas y añadido mejoras importantes en comunicación, simulación de órbitas y manejo de imágenes.
 Hemos implementado la comunicación entre Arduinos y con la estación de tierra utilizando pines UART y un convertidor USB–Serial FT232RL. La estación de tierra, desarrollada en Python, recibe nuestros comandos y nos permite enviar datos de manera estable y confiable.
   
@@ -114,3 +115,8 @@ Hemos añadido una cámara en el satélite, capaz de capturar imágenes bajo dem
 
 Finalmente, completamos el envío de imágenes entre el satélite y la estación de tierra, transmitiendo los datos mediante la comunicación serial y procesándolos en Python. Esto simula de manera aproximada la operación de un satélite de observación real, integrando telemetría, control y transmisión de datos.
 
+## Explicación extensa  
+### Comunicación  
+En nuestro proyecto, la comunicación se divide en dos partes. El primer paso corresponde a la comunicación entre la estación de tierra y el ordenador, mientras que el segundo tramo es la comunicación inalámbrica entre el satélite y la estación de tierra, que se realiza mediante el kit LoRa.
+
+Para permitir la comunicación entre el Arduino de la estación de tierra y el ordenador, se utiliza un convertidor USB–Serial (UART), concretamente un chip FT232RL. Este componente es necesario porque el ordenador trabaja con USB, mientras que el Arduino utiliza comunicación serie asíncrona. El convertidor actúa como traductor entre estos dos sistemas y permite que el software en Python pueda recibir y enviar datos correctamente.
