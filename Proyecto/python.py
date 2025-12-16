@@ -146,25 +146,25 @@ def mostrar_menu_principal():
     """
     limpiar_ventana()
 
-    Label(window, text="Selecciona un sensor", font=("Courier", 22)).pack(pady=40)
+    Label(window, text="Menú principal", font=("Courier", 25)).pack(pady=40)
 
     Button(window, text="Temperatura y Humedad",
-           font=("Arial", 16), bg='lightblue',
+           font=("Arial", 16), bg='#0077B6',
            command=mostrar_interfaz_temp_hum).pack(pady=20)
 
     Button(window, text="Sensor de Movimiento",
-           font=("Arial", 16), bg='lightgreen',
+           font=("Arial", 16), bg='#0096C7',
            command=mostrar_interfaz_radar).pack(pady=20)
     
     Button(window, text="Órbita 3D Satélite",
-           font=("Arial", 16), bg='lightyellow',
+           font=("Arial", 16), bg='#00B4D8',
            command=abrir_grafica_3d).pack(pady=20)
     
     Button(window, text="Registrar Observación", 
-           font=("Arial", 16), bg='lightpink',
+           font=("Arial", 16), bg='#48CAE4',
            command=mostrar_panel_observaciones).pack(pady=20)
     Button(window, text="Ver Registro de Eventos",
-           font=("Arial", 16), bg='lightgray',
+           font=("Arial", 16), bg='#90E0EF',
            command=mostrar_eventos).pack(pady=20)
 
 
@@ -222,37 +222,42 @@ def mostrar_interfaz_temp_hum():
     canvas.get_tk_widget().pack(fill=BOTH, expand=True)
 
     # -------- BOTONES STOP/START --------
-    Button(window, text="STOP", bg='orange',
+    Label(window, text="Parar/renaudar envio de datos: ").grid(row=2, column=0)
+
+    Button(window, text="STOP", bg='#C1121F',
            command=parar_transmision_temp_hum)\
-           .grid(row=2, column=0, padx=5, pady=5)
+           .grid(row=2, column=1, padx=5, pady=5)
 
-    Button(window, text="START", bg='green',
+    Button(window, text="START", bg='#7AE582',
            command=reanudar_transmision_temp_hum)\
-           .grid(row=2, column=1)
-
-    Button(window, text="Sonido", bg='red',
-           command=reproducir_fallo)\
            .grid(row=2, column=2)
 
     Button(window, text="Volver", bg='gray',
            command=mostrar_menu_principal)\
            .grid(row=2, column=3)
 
-    # -------- MEDIAS SATÉLITE / TIERRA --------
-    Button(window, text="Satélite", bg='lightblue',
-           command=hacer_medias_satelite)\
-           .grid(row=3, column=1)
+    Label(window, text=" ").grid(row=3, column=0) #label vacio para hacer una linea en blanco
 
-    Button(window, text="Tierra", bg='lightgreen',
+    # -------- MEDIAS SATÉLITE / TIERRA --------
+
+    Label(window, text="Hacer medias en Satélite/tierra: ").grid(row=4, column=0)
+    
+    Button(window, text="Satélite", bg='#5390D9',
+           command=hacer_medias_satelite)\
+           .grid(row=4, column=1)
+
+    Button(window, text="Tierra", bg='#5390D9',
            command=hacer_medias_tierra)\
-           .grid(row=3, column=3)
+           .grid(row=4, column=2)
+    
+    Label(window, text=" ").grid(row=5, column=0) #label vacio para hacer una linea en blanco
 
     # -------- ENTRADAS DE LIMITES --------
-    Label(window, text="Temp media máx").grid(row=4, column=0)
-    temp_entry = Entry(window); temp_entry.grid(row=4, column=1)
+    Label(window, text="Temp media máx").grid(row=6, column=0)
+    temp_entry = Entry(window); temp_entry.grid(row=6, column=1)
 
-    Label(window, text="Hum media máx").grid(row=5, column=0)
-    hum_entry = Entry(window); hum_entry.grid(row=5, column=1)
+    Label(window, text="Hum media máx").grid(row=7, column=0)
+    hum_entry = Entry(window); hum_entry.grid(row=7, column=1)
 
     # Función interna para guardar límites nuevos
     def guardar_valores():
@@ -268,18 +273,22 @@ def mostrar_interfaz_temp_hum():
         except:
             print("Valores incorrectos")
 
-    Button(window, text="Guardar", bg="lightblue",
+    Button(window, text="Guardar", bg="#48BFE3",
            command=guardar_valores)\
-           .grid(row=4, column=2)
+           .grid(row=6, column=2)
+    
+    Button(window, text="Guardar", bg="#48BFE3",
+           command=guardar_valores)\
+           .grid(row=7, column=2)
 
     # -------- PERIODO DE ENVÍO TH --------
-    Label(window, text="Periodo T/H (ms)").grid(row=6, column=0)
+    Label(window, text="Periodo T/H (ms)").grid(row=8, column=0)
     periodo_TH_entry = Entry(window)
-    periodo_TH_entry.grid(row=6, column=1)
+    periodo_TH_entry.grid(row=8, column=1)
 
     Button(window, text="Enviar periodo T/H",
-           bg="lightgreen", command=enviar_nuevo_periodo_datos_temp_hum)\
-           .grid(row=6, column=2, columnspan=2)
+           bg="#48BFE3", command=enviar_nuevo_periodo_datos_temp_hum)\
+           .grid(row=8, column=2)
 
     global grafica_iniciada
     grafica_iniciada = True  # Indicamos que ya hay gráfica creada
@@ -335,32 +344,40 @@ def mostrar_interfaz_radar():
     canvas.get_tk_widget().pack(fill=BOTH, expand=True)
 
     # Botones principales
-    Button(window, text="STOP", bg='orange',
-           command=parar_transmision_dist).grid(row=2, column=0)
+    Label(window, text="Parar/renaudar envio de datos: ").grid(row=2, column=0)
 
-    Button(window, text="START", bg='green',
-           command=reanudar_transmision_dist).grid(row=2, column=1)
+    Button(window, text="STOP", bg='#C1121F',
+           command=parar_transmision_dist).grid(row=2, column=1)
+
+    Button(window, text="START", bg='#7AE582',
+           command=reanudar_transmision_dist).grid(row=2, column=2)
 
     Button(window, text="Volver", bg='gray',
-           command=mostrar_menu_principal).grid(row=2, column=2)
+           command=mostrar_menu_principal).grid(row=2, column=3)
+
+    Label(window, text=" ").grid(row=3, column=0)
 
     # Entrada del periodo de la distancia
-    Label(window, text="Periodo Dist (ms)").grid(row=4, column=0)
+    Label(window, text="Periodo Dist (ms)").grid(row=7, column=0)
     periodo_D_entry = Entry(window)
-    periodo_D_entry.grid(row=4, column=1)
+    periodo_D_entry.grid(row=7, column=1)
 
     Button(window, text="Enviar periodo Dist",
-           bg="lightblue", command=enviar_nuevo_periodo_datos_dist)\
-           .grid(row=4, column=2, columnspan=2)
+           bg="#48BFE3", command=enviar_nuevo_periodo_datos_dist)\
+           .grid(row=7, column=2)
 
     # Botón de rastreo
-    Button(window, text="Modo Rastreo", bg='yellow',
-           command=activar_modo_rastreo).grid(row=3, column=0)
+    Label(window, text="Aplicar modo rastreo ").grid(row=4, column=0)
+
+    Button(window, text="Modo Rastreo", bg='#FFBA08',
+           command=activar_modo_rastreo).grid(row=4, column=2)
+    
+    Label(window, text=" ").grid(row=6, column=0)
 
     # Ángulo fijo manual
-    Label(window, text="Ángulo fijo (0–180):").grid(row=3, column=1)
+    Label(window, text="Ángulo fijo (0–180)").grid(row=5, column=0)
     angulo_entry = Entry(window)
-    angulo_entry.grid(row=3, column=2)
+    angulo_entry.grid(row=5, column=1)
 
     def aplicar_angulo():
         """
@@ -372,8 +389,8 @@ def mostrar_interfaz_radar():
             enviar_comando(f"8:{ang}")
             print("Ángulo fijo enviado:", f"8:{ang}\n".strip())
 
-    Button(window, text="Aplicar Ángulo", bg='lightblue',
-           command=aplicar_angulo).grid(row=3, column=3)
+    Button(window, text="Aplicar Ángulo", bg='#48BFE3',
+           command=aplicar_angulo).grid(row=5, column=2)
 
     grafica_iniciada = True
 
