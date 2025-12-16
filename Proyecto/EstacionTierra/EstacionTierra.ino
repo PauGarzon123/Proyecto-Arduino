@@ -11,7 +11,6 @@ const int LED_RASTREO = A2;
 const int LED_DIST    = A3;
 const int LED_TH      = A4;
 const int LED_ERROR   = A5;
-const int LED_POS     = A0;
 
 void setup() {
 
@@ -26,7 +25,6 @@ void setup() {
   pinMode(LED_DIST, OUTPUT);
   pinMode(LED_TH, OUTPUT);
   pinMode(LED_ERROR, OUTPUT);
-  pinMode(LED_POS, OUTPUT);
 
   puertoPC.println("Estación de Tierra lista (FTDI OK).");
 }
@@ -40,15 +38,13 @@ void loop() {
     String datos = Serial.readStringUntil('\n');
     datos.trim();
 
-    // Reenviar al PC
     puertoPC.println(datos);
 
-    // LEDs...
     if (datos.startsWith("1:")) { 
-      digitalWrite(LED_TH, HIGH);  delay(20); digitalWrite(LED_TH, LOW); 
+      digitalWrite(LED_TH, HIGH); delay(20); digitalWrite(LED_TH, LOW); 
     }
     else if (datos.startsWith("3:")) {
-      digitalWrite(LED_DIST, HIGH);  delay(20); digitalWrite(LED_DIST, LOW);
+      digitalWrite(LED_DIST, HIGH); delay(20); digitalWrite(LED_DIST, LOW);
     }
     else if (datos.startsWith("2:") ||
              datos.startsWith("4:") ||
@@ -58,18 +54,7 @@ void loop() {
     else if (datos.startsWith("6:")) {
       digitalWrite(LED_ALARMA, HIGH); delay(400); digitalWrite(LED_ALARMA, LOW);
     }
-    else if (datos.startsWith("7:")) {
-      digitalWrite(LED_RASTREO, HIGH);
-    }
-    else if (datos.startsWith("8:")) {
-      digitalWrite(LED_RASTREO, LOW);
-    }
-    else if (datos.startsWith("9:")) {
-      digitalWrite(LED_POS, HIGH); delay(20); digitalWrite(LED_POS, LOW);
-    }
   }
-
-
 
   // ============================
   // 2) DATOS DESDE EL PC (FTDI)
@@ -78,8 +63,15 @@ void loop() {
     String comando = puertoPC.readStringUntil('\n');
     comando.trim();
 
-    // Reenviar al satélite
     Serial.println(comando);
+
+    if (comando.startsWith("7:")) {
+      digitalWrite(LED_RASTREO, HIGH);
+    }
+    else if (comando.startsWith("8:")) {
+      digitalWrite(LED_RASTREO, LOW);
+    }
   }
 }
+
 
