@@ -145,3 +145,26 @@ Esta representación tridimensional permite visualizar claramente la forma de la
   <img src="images/grafica3d1.png" width="300">
   <img src="images/codigo3d1.png" width="350">
 </p>
+  
+<p align="center">
+  <img src="images/grafica3d2.png" width="300">
+  <img src="images/codigo3d2.png" width="350">
+</p>  
+
+Paralelamente, se ha implementado una segunda visualización en dos dimensiones que proyecta la posición del satélite sobre un mapa real de la Tierra. Esta proyección 2D utiliza un mapa mundial como fondo, con los ejes representando la latitud y la longitud. De este modo, se puede ver de forma directa por qué zonas del planeta pasa el satélite a lo largo del tiempo.
+
+<p align="center">
+  <img src="images/mapa2d1.png" width="450">
+  <img src="images/codigo2d1.png" width="300">
+</p>  
+
+<p align="center">
+  <img src="images/mapa2d2.png" width="450">
+  <img src="images/codigo2d2.png" width="300">
+</p>  
+
+Tal como se puede ver en las imágenes, tanto para la visualización en 3D como para la proyección en 2D, en las primeras figuras se muestra el código y el resultado de la generación del espacio. En las siguientes imágenes se puede ver la generación del trazado de la órbita, donde se representa el recorrido seguido por el satélite y se destaca su última posición. De este modo, se puede entender claramente cómo el programa construye el escenario y, a partir de este, dibuja tanto la órbita en 3D como su proyección en 2D sobre la superficie terrestre.
+  
+3.CÁMARA OV2640 MINI INTEGRADA EN EL SATÉLITE  
+
+
