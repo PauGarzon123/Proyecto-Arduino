@@ -13,16 +13,14 @@
   #define ECHO 5
   #define SERVO 3
   #define CS_PIN 7
-  #define PACKET_SIZE 32
-  #define INTERVALO_IMAGEN 4000
+  #define PACKET_SIZE 32  // Tamaño de cada fragmento de imagen
+  #define INTERVALO_IMAGEN 4000 // Retardo seguro entre paquetes de imagen
 
   ArduCAM myCAM(OV2640, CS_PIN);
-  bool modoImagen = false;
+  bool modoImagen = false;   // Flag para activar envío de imagen
 
   DHT dht(DHTPIN, DHTTYPE);
   Servo servoMotor;
-  //  ⬇️ ELIMINO SoftwareSerial
-  //SoftwareSerial enlace(10, 11);
 
   const int led1 = 13;
 
@@ -30,7 +28,6 @@
   bool transmitirTH = true;
   bool transmitirDist = true;
   bool transmitirPos = true;
-
   bool mediasEnSatelite = true;
 
   // ------------ TIMERS ------------
@@ -55,15 +52,16 @@
   int anguloFijo = 90;
 
   // ------------ MEDIAS ------------
-  const int N = 10;
+  const int N = 10; // Tamaño del buffer circular
   float tempCola[N];
   float humCola[N];
 
-  int idx = 0;
-  int cont = 0;
-  int nuevos = 0;
 
-  int jT = 0, jH = 0;
+  int idx = 0;       // Índice actual del buffer
+  int cont = 0;      // Cantidad de datos acumulados
+  int nuevos = 0;    // Contador de datos nuevos
+
+  int jT = 0, jH = 0; // Contadores para alertas por límite
 
   float mediaT = 0;
   float mediaH = 0;
@@ -91,7 +89,7 @@
     SPI.begin();
     pinMode(CS_PIN, OUTPUT);
     digitalWrite(CS_PIN, HIGH);
-
+    // Inicializa cámara ArduCAM con resolución 160x120 JPEG
     myCAM.set_format(JPEG);
     myCAM.InitCAM();
     myCAM.OV2640_set_JPEG_size(OV2640_160x120);
@@ -124,6 +122,7 @@
 
   // ========================================================
   // ============= ENVÍO DE TEMPERATURA =====================
+  // Envía por Serial temperatura y humedad con formato y checksum
   // ========================================================
   void enviarTemperatura(float t, float h) {
     digitalWrite(led1, HIGH);
@@ -144,6 +143,7 @@
 
   // ========================================================
   // ============= ENVÍO DE DISTANCIA ========================
+  // Envía por Serial la distancia medida y ángulo del radar
   // ========================================================
   void enviarDistancia(float d, int ang) {
     digitalWrite(led1, HIGH);
@@ -163,7 +163,9 @@
   }
 
   // ========================================================
-  // ===================== ENVIAR MEDIAS =====================
+  // =================CALCULAR Y ENVIAR MEDIAS =====================
+  // Calcula medias de N últimas lecturas de temperatura y humedad
+  // Envía resultado y controla alertas si supera límites
   // ========================================================
   void calcularEnviarMedias(float t, float h) {
     if (!mediasEnSatelite) return;
@@ -198,7 +200,7 @@
       Serial.println(checksum);
 
       nuevos = 0;
-
+      // Control de alertas si media supera límites
       if (mediaT >= valorlimiteT) {
         jT++;
         if (jT >= 3) Serial.println("6:|112");
@@ -213,6 +215,7 @@
 
   // ========================================================
   // ===================== ENVIÓ ORBITAL =====================
+  // Simula la posición orbital y envía coordenadas
   // ========================================================
   void enviarPosicion(double x, double y, double z) {
     String s = "9:";
@@ -228,7 +231,7 @@
     Serial.print("|");
     Serial.println(checksum);
   }
-
+  // Calcula posición simulada en órbita con opción ECEF
   void simularPosicion(unsigned long tiempo_ms, double inclination, int ecef) {
     double time = (tiempo_ms / 1000.0) * TIME_COMPRESSION;
     double angle = 2 * PI * (time / real_orbital_period);
@@ -251,11 +254,12 @@
 
   // ========================================================
   // ===================== LECTURAS ==========================
+  // Lectura de sensores y control de alarmas
   // ========================================================
   void leerTemperaturaHumedad() {
     float h = dht.readHumidity();
     float t = dht.readTemperature();
-
+     // Alarmas por superar límites de temp y hum
     if (t > valorlimiteT) {
       Serial.println("ALARM:temperatura excesiva");
   } 
@@ -312,6 +316,7 @@
 
   // ========================================================
   // ===================== TIMEOUTS ==========================
+  // Control de fallos por falta de datos válidos
   // ========================================================
   void verificarTimeout() {
     if (transmitirTH && millis() - ultimoDatoOKTempHum > timeoutFallo) {
@@ -325,13 +330,14 @@
     }
 
     if (transmitirPos && millis() - ultimoDatoOKPos > timeoutFallo) {
-      //Serial.println("10:|155");
+      Serial.println("10:|155");
       ultimoDatoOKPos = millis();
     }
   }
 
   // ========================================================
   // ====================== COMANDOS =========================
+  // Interpreta comandos recibidos por Serial y los ejecuta
   // ========================================================
   void procesarComando(String cmd) {
     cmd.trim();
@@ -388,14 +394,20 @@
       valorlimiteH = params.substring(pos + 1).toFloat();
     }
   }
-  // ================= CRC-8 BINARIO =================
+// ========================================================
+// ================= CRC-8 BINARIO ========================
+// Verificación de integridad de paquetes de imagen
+// ========================================================
 uint8_t crc8(uint8_t *data, int len) {
   uint8_t crc = 0;
   for (int i = 0; i < len; i++) crc ^= data[i];
   return crc;
 }
 
-// ================= BYTE → HEX =================
+// ========================================================
+// ================= BYTE → HEX ===========================
+// Convierte un byte a cadena hexadecimal
+// ========================================================
 String toHex(byte b) {
   const char hexmap[] = "0123456789ABCDEF";
   String s = "";
@@ -404,7 +416,10 @@ String toHex(byte b) {
   return s;
 }
 
-// ================= ESPERA ACK =================
+// ========================================================
+// ================= ESPERA ACK ===========================
+// Espera confirmación de recepción de paquete de imagen
+// ========================================================
 bool waitForACK(uint16_t id) {
   unsigned long start = millis();
   String esperado = "ACK " + String(id);
@@ -418,44 +433,47 @@ bool waitForACK(uint16_t id) {
   }
   return false;
 }
-
-// ================= ENVIO DE IMAGEN =================
+// ========================================================
+// ================= ENVÍO DE IMAGEN =====================
+// Captura imagen, la divide en paquetes, calcula CRC, envía y espera ACK
+// ========================================================
 void enviarImagen() {
 
-  myCAM.flush_fifo();
+  myCAM.flush_fifo(); // Vacía cualquier dato previo en la memoria FIFO
   myCAM.clear_fifo_flag();
   myCAM.start_capture();
-  while (!myCAM.get_bit(ARDUCHIP_TRIG, CAP_DONE_MASK));
-
+  while (!myCAM.get_bit(ARDUCHIP_TRIG, CAP_DONE_MASK));// Espera hasta que la captura termine
+  // Obtiene la longitud total de la imagen en bytes
   uint32_t length = myCAM.read_fifo_length();
   if (length == 0) return;
 
-  uint16_t pid = 0;
-  uint32_t index = 0;
+  uint16_t pid = 0;  // ID del paquete (incremental)
+  uint32_t index = 0; // Índice de lectura de bytes
 
   myCAM.CS_LOW();
-
+  // Mientras no hayamos leído toda la imagen
   while (index < length) {
 
-    uint8_t raw[PACKET_SIZE];
+    uint8_t raw[PACKET_SIZE]; // Buffer temporal para almacenar el paquete
     int raw_len = 0;
-
+     // Llenar el paquete con PACKET_SIZE bytes o hasta el final de la imagen
     while (raw_len < PACKET_SIZE && index < length) {
-      raw[raw_len++] = myCAM.read_fifo();
+      raw[raw_len++] = myCAM.read_fifo();// Leer un byte de la FIFO
       index++;
     }
-
+    // Calcular CRC-8 del paquete para verificación de errores
     uint8_t crc = crc8(raw, raw_len);
-
+    // Construir el mensaje de transmisión en formato:
+    // 99:<ID_paquete>:<datos en HEX>:<CRC>
     String msg = "99:" + String(pid) + ":";
     for (int i = 0; i < raw_len; i++) msg += toHex(raw[i]);
     msg += ":" + String(crc);
 
     Serial.println(msg);
-
+    // Esperar ACK del receptor. Si no llega, volver a enviar el paquete
     if (!waitForACK(pid)) continue;
 
-    delay(INTERVALO_IMAGEN);  // ⏱️ LoRa-safe
+    delay(INTERVALO_IMAGEN);  // Retardo para evitar saturar LoRa
     pid++;
   }
 
@@ -466,6 +484,7 @@ void enviarImagen() {
 
   // ========================================================
   // ======================== LOOP ===========================
+  // Control principal: lectura sensores, transmisión y comandos
   // ========================================================
 void loop() {
 
@@ -476,7 +495,7 @@ void loop() {
     String comandoRecibido = Serial.readStringUntil('\n');
     comandoRecibido.trim();
 
-    // 🔴 COMANDO ESPECIAL IMAGEN
+    // COMANDO ESPECIAL IMAGEN
     if (comandoRecibido == "99:") {
       modoImagen = true;
     } 
@@ -488,9 +507,9 @@ void loop() {
 
   // ======== MODO IMAGEN (EXCLUSIVO) =========
   if (modoImagen) {
-    enviarImagen();      // 📷 envío bloqueante de imagen
+    enviarImagen();    ¡
     modoImagen = false;  // volver a modo normal
-    return;              // ⛔ no ejecutar nada más este loop
+    return;              
   }
 
   // ======== RESTO DEL CÓDIGO SIN CAMBIOS =========
