@@ -113,6 +113,10 @@
   // ========================================================
   // ===================== CHECKSUM =========================
   // ========================================================
+  // Calcula checksum modulo 256 de una cadena
+  // Entrada: cadenaf[] = cadena de caracteres
+  // Salida: valor checksum (0-255)
+
   int hacerChecksum(const char cadenaf[]) {
     int suma = 0;
     for (int i = 0; i < strlen(cadenaf); i++)
@@ -122,8 +126,11 @@
 
   // ========================================================
   // ============= ENVÍO DE TEMPERATURA =====================
-  // Envía por Serial temperatura y humedad con formato y checksum
   // ========================================================
+  // Envía por Serial temperatura y humedad con formato y checksum
+  // Entrada: t = temperatura (°C), h = humedad (%)
+
+
   void enviarTemperatura(float t, float h) {
     digitalWrite(led1, HIGH);
 
@@ -143,8 +150,11 @@
 
   // ========================================================
   // ============= ENVÍO DE DISTANCIA ========================
-  // Envía por Serial la distancia medida y ángulo del radar
   // ========================================================
+  // Envía por Serial la distancia medida y ángulo del radar
+  // Entrada: d = distancia (cm), ang = ángulo servo (°)
+
+
   void enviarDistancia(float d, int ang) {
     digitalWrite(led1, HIGH);
 
@@ -164,9 +174,11 @@
 
   // ========================================================
   // =================CALCULAR Y ENVIAR MEDIAS =====================
+  // ========================================================
   // Calcula medias de N últimas lecturas de temperatura y humedad
   // Envía resultado y controla alertas si supera límites
-  // ========================================================
+  // Entrada: t = temperatura actual, h = humedad actual
+
   void calcularEnviarMedias(float t, float h) {
     if (!mediasEnSatelite) return;
 
@@ -213,10 +225,10 @@
     }
   }
 
-  // ========================================================
-  // ===================== ENVIÓ ORBITAL =====================
-  // Simula la posición orbital y envía coordenadas
-  // ========================================================
+// ==================== ENVÍO POSICIÓN ORBITAL ====================
+// Envía coordenadas simuladas del satélite por Serial
+// Entrada: x, y, z = posición en km
+
   void enviarPosicion(double x, double y, double z) {
     String s = "9:";
     s += String(x, 2);
@@ -231,7 +243,12 @@
     Serial.print("|");
     Serial.println(checksum);
   }
-  // Calcula posición simulada en órbita con opción ECEF
+// ==================== SIMULACIÓN POSICIÓN ====================
+// Calcula posición orbital simulada y envía
+// Entrada: tiempo_ms = tiempo en ms desde inicio
+//          inclination = inclinación orbital (rad)
+//          ecef = 1 para convertir a coordenadas ECEF, 0 sin conversión
+// Salida: ningún valor de retorno
   void simularPosicion(unsigned long tiempo_ms, double inclination, int ecef) {
     double time = (tiempo_ms / 1000.0) * TIME_COMPRESSION;
     double angle = 2 * PI * (time / real_orbital_period);
@@ -274,7 +291,8 @@
     enviarTemperatura(t, h);
     calcularEnviarMedias(t, h);
   }
-
+  // ==================== MEDIR DISTANCIA ULTRASÓNICA ====================
+  // Retorna: distancia medida en cm o NAN si no hay eco
   float medirDistancia() {
     digitalWrite(TRIG, LOW);
     delayMicroseconds(2);
@@ -338,7 +356,7 @@
   // ========================================================
   // ====================== COMANDOS =========================
   // Interpreta comandos recibidos por Serial y los ejecuta
-  // ========================================================
+  // Entrada: cmd = comando recibido por Serial. Se pueden consultar en la tabla del protocolo en el readme
   void procesarComando(String cmd) {
     cmd.trim();
     int sep = cmd.indexOf('|');
@@ -355,40 +373,40 @@
     int codigo = mensaje.substring(0, fin).toInt();
     String params = mensaje.substring(fin + 1);
 
-    if (codigo == 1) { 
+    if (codigo == 1) { //parar envio datos temp/hum
       transmitirTH = false;
     }
-    else if (codigo == 2) {
+    else if (codigo == 2) {//reanudar envio datos temp/hum   
       transmitirTH = true;
     }
-    else if (codigo == 3) {
+    else if (codigo == 3) {//parar envio datos dist
       transmitirDist = false;
     }
-    else if (codigo == 4) {
+    else if (codigo == 4) {//reanudar envio datos dist
       transmitirDist = true;
     }
-    else if (codigo == 5) {
+    else if (codigo == 5) {//nuevo periodo de datos temp/hum
       periodoTempHum = params.toInt();
     }
-    else if (codigo == 6) {
+    else if (codigo == 6) {//nuevo periodo de datos dist
       periodoDist = params.toInt();
     }
-    else if (codigo == 7) {
+    else if (codigo == 7) {//sensor de distancia modo rastreo
       modoRastreo = true;
     }
-    else if (codigo == 8) {
+    else if (codigo == 8) {//angulo nuevo y activar modo manual
       anguloFijo = params.toInt();
       if (anguloFijo < 0) anguloFijo = 0;
       if (anguloFijo > 180) anguloFijo = 180;
       modoRastreo = false;
     }
-    else if (codigo == 10) {
+    else if (codigo == 10) {//hacer las medias en el satélite
       mediasEnSatelite = true;
     }
-    else if (codigo == 11) {
+    else if (codigo == 11) {//hacer las medias en la estación tierra
       mediasEnSatelite = false;
     }
-    else if (codigo == 12) {
+    else if (codigo == 12) {//valor limite de la media temp/hum
       int pos = params.indexOf(':');
       valorlimiteT = params.substring(0, pos).toFloat();
       valorlimiteH = params.substring(pos + 1).toFloat();
