@@ -117,7 +117,7 @@ Finalmente, completamos el envío de imágenes entre el satélite y la estación
 
 #### Explicación extensa  
 
-1. COMUNICACIÓN  
+**1. COMUNICACIÓN**  
 
 En nuestro proyecto, la comunicación se divide en dos partes. El primer paso corresponde a la comunicación entre la estación de tierra y el ordenador, mientras que el segundo tramo es la comunicación inalámbrica entre el satélite y la estación de tierra, que se realiza mediante el kit LoRa.
 
@@ -131,7 +131,7 @@ Esta limitación de velocidad no proviene de los pines RX/TX, sino del canal de 
 
 Finalmente, no se conectan ambos Arduinos directamente al PC mediante USB. Dado que los puertos USB de los Arduinos utilizan internamente comunicación serie, conectar ambos al mismo ordenador podría provocar conflictos y dificultar el control de la comunicación. Por este motivo, se mantiene un único enlace USB–Serial en la estación de tierra, mientras que la comunicación con el satélite se realiza exclusivamente a través del canal LoRa. Esta arquitectura permite separar claramente cada enlace y mantener un sistema estable y coherente.  
   
-2.ÓRBITA 3D Y D2  
+**2.ÓRBITA 3D Y D2** 
 
 En esta parte del proyecto se ha implementado una representación visual de la órbita del satélite en dos formatos diferentes: una visualización tridimensional (3D) y una proyección bidimensional (2D) sobre un mapa real de la Tierra. Esta doble representación tiene como objetivo facilitar la comprensión del movimiento del satélite tanto desde un punto de vista espacial como geográfico.
 
@@ -165,6 +165,18 @@ Paralelamente, se ha implementado una segunda visualización en dos dimensiones 
 
 Tal como se puede ver en las imágenes, tanto para la visualización en 3D como para la proyección en 2D, en las primeras figuras se muestra el código y el resultado de la generación del espacio. En las siguientes imágenes se puede ver la generación del trazado de la órbita, donde se representa el recorrido seguido por el satélite y se destaca su última posición. De este modo, se puede entender claramente cómo el programa construye el escenario y, a partir de este, dibuja tanto la órbita en 3D como su proyección en 2D sobre la superficie terrestre.
   
-3.CÁMARA OV2640 MINI INTEGRADA EN EL SATÉLITE  
+**3.CÁMARA OV2640 MINI INTEGRADA EN EL SATÉLITE**  
+
+Además, en la versión 4 del proyecto se ha integrado una cámara digital OV2640 mini en el satélite, con el objetivo de simular la captura de imágenes desde el espacio y su envío hacia la estación de tierra. Esta cámara está diseñada específicamente para sistemas embebidos y microcontroladores.  
+
+![Cámara](images/camara.png)  
+
+La cámara OV2640 es una cámara digital de tipo CMOS, es decir, dispone de un sensor formado por una matriz de píxeles capaces de captar la luz incidente. Cada píxel mide la intensidad de la luz que recibe y la convierte en una señal eléctrica.
+
+Una vez que la luz ha sido captada, la propia cámara se encarga de convertir estas señales eléctricas en valores digitales mediante circuitos internos de conversión analógica a digital. A partir de ahí, la cámara realiza un procesamiento interno de la imagen, que incluye ajustes básicos como el brillo, el contraste y la corrección del color. Todo este proceso se realiza dentro del módulo de la cámara, sin necesidad de que el Arduino intervenga.  
+
+![funcionamiento-camara](images/funcionamento_camara.png)  
+
+Un aspecto importante de la OV2640 es que incorpora compresión JPEG por hardware. Esto significa que la imagen final no se envía en formato bruto, sino como un archivo JPEG ya comprimido. Esta característica es clave en el proyecto, ya que reduce considerablemente el tamaño de la imagen y permite que el Arduino pueda gestionar el envío sin tener que realizar cálculos complejos.
 
 
