@@ -226,6 +226,7 @@ En estas dos imágenes se puede observar que el sistema  es capaz de generar una
 Por otra parte, la funcionalidad de imagen satelital real permite obtener una imagen capturada directamente por el satélite mediante la cámara OV2640 integrada. A diferencia de la imagen simulada, en este caso la imagen no se genera a partir de una API externa, sino que es el resultado de una captura real realizada por el sistema embarcado.
 
 Cuando se pulsa el botón de imagen satelital real, la estación de tierra envía una orden al satélite para que realice una captura con la cámara. Una vez tomada la fotografía, la imagen se transmite hacia la estación de tierra.
-En el lado del ordenador, el programa en Python recibe los paquetes, reconstruye el archivo JPEG original y lo descarga.
+En el lado del ordenador, el programa en Python recibe los paquetes, reconstruye el archivo JPEG original y lo descarga.  
 
-##Resultado final
+## Resultado final  
+![resultado-final](images/resultado_final.png)
