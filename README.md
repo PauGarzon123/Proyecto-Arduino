@@ -210,7 +210,22 @@ La imagen simulada se genera a partir de coordenadas geográficas (latitud y lon
 
 ![codigo-cord-geo](images/codigo_cord_geo.png)  
 
-Una vez calculadas estas coordenadas, el programa construye automáticamente la petición a la API mediante una URL que incluye el mosaico satelital, el nivel de zoom y el tile correspondiente. De este modo, solo se descarga la imagen exacta de la zona de interés.  
+Una vez calculadas estas coordenadas, el programa construye automáticamente la petición a la API mediante una URL que incluye el mosaico satelital, el nivel de zoom y el tile correspondiente. De este modo, solo se descarga la imagen exacta de la zona de interés.
+Un aspecto relevante del funcionamiento de estas APIs satelitales es que no todas las zonas del planeta disponen de imágenes. En particular, grandes extensiones como los océanos no siempre se generan o almacenan con detalle, ya que no aportan información visual relevante y ocuparían mucho espacio de almacenamiento. Por este motivo, cuando se solicita una imagen correspondiente a una zona sin datos, el servidor puede devolver un tile vacío o transparente.
 
-![codigo-noinfo-API](images/codigo_noinfo_API.png)
+El programa en Python ya tiene en cuenta esta situación. Una vez descargada la imagen, se comprueba si el tile contiene realmente información visual o si es completamente transparente. En caso de que la imagen esté vacía, el sistema lo detecta y evita mostrar o guardar una imagen incorrecta.  
 
+![codigo-noinfo-API](images/codigo_noinfo_API.png)  
+
+EJEMPLO
+
+![ejemplo-imagen-simulada](images/ejemplo_imagen_simulada.png)  
+
+En estas dos imágenes se puede observar que el sistema  es capaz de generar una imagen asociada a una posición concreta sobre la superficie terrestre. La imagen obtenida corresponde exactamente a la ubicación desde donde se ha solicitado la captura.
+
+Por otra parte, la funcionalidad de imagen satelital real permite obtener una imagen capturada directamente por el satélite mediante la cámara OV2640 integrada. A diferencia de la imagen simulada, en este caso la imagen no se genera a partir de una API externa, sino que es el resultado de una captura real realizada por el sistema embarcado.
+
+Cuando se pulsa el botón de imagen satelital real, la estación de tierra envía una orden al satélite para que realice una captura con la cámara. Una vez tomada la fotografía, la imagen se transmite hacia la estación de tierra.
+En el lado del ordenador, el programa en Python recibe los paquetes, reconstruye el archivo JPEG original y lo descarga.
+
+##Resultado final
