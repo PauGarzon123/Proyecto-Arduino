@@ -8,14 +8,15 @@
 
 ## Descripción  
 Proyecto basado en Arduino que simula un sistema satelital formado principalmete por 2 partes:  
--Un satelite simulado  
+-Un satélite simulado  
 -Una estación tierra
 
-En el proyecto el satelite se encarga de recoger datos como la humedad, distancia o temperatura.  
+En el proyecto el satélite se encarga de recoger datos como la humedad, distancia o temperatura.  
 Este los envia a la estación tierra donde los muestra al usuario mediante una interfaz grafica.
 
-Esta interfaz además permite hacer cambios en la toma de datos como por ejemplo un cambio de direccion en el radar.
-Este cambio se transmite de tierra al satélite para que pueda realizar el cambio.
+Esta interfaz permite ver los datos de la temperatura y humedad y distancia. Además se puede ver la posición orbital simulada y otras funciones como las imagenes tomadas por el satélite.
+Este también permite hacer cambios en la toma de datos como por ejemplo un cambio de direccion en el radar o cambios en las medias de las graficas.
+Esta acción se transmite de tierra al satélite mediante unos comándos para que pueda realizar el cambio.
 
 ## Herramientas  
 ### Lenguajes
