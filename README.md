@@ -117,7 +117,7 @@ Finalmente, completamos el envío de imágenes entre el satélite y la estación
 
 #### Explicación extensa  
 
-1. COMUNICACIÓN  
+**1. COMUNICACIÓN**  
 
 En nuestro proyecto, la comunicación se divide en dos partes. El primer paso corresponde a la comunicación entre la estación de tierra y el ordenador, mientras que el segundo tramo es la comunicación inalámbrica entre el satélite y la estación de tierra, que se realiza mediante el kit LoRa.
 
@@ -131,7 +131,7 @@ Esta limitación de velocidad no proviene de los pines RX/TX, sino del canal de 
 
 Finalmente, no se conectan ambos Arduinos directamente al PC mediante USB. Dado que los puertos USB de los Arduinos utilizan internamente comunicación serie, conectar ambos al mismo ordenador podría provocar conflictos y dificultar el control de la comunicación. Por este motivo, se mantiene un único enlace USB–Serial en la estación de tierra, mientras que la comunicación con el satélite se realiza exclusivamente a través del canal LoRa. Esta arquitectura permite separar claramente cada enlace y mantener un sistema estable y coherente.  
   
-2.ÓRBITA 3D Y D2  
+**2.ÓRBITA 3D Y D2** 
 
 En esta parte del proyecto se ha implementado una representación visual de la órbita del satélite en dos formatos diferentes: una visualización tridimensional (3D) y una proyección bidimensional (2D) sobre un mapa real de la Tierra. Esta doble representación tiene como objetivo facilitar la comprensión del movimiento del satélite tanto desde un punto de vista espacial como geográfico.
 
@@ -165,6 +165,33 @@ Paralelamente, se ha implementado una segunda visualización en dos dimensiones 
 
 Tal como se puede ver en las imágenes, tanto para la visualización en 3D como para la proyección en 2D, en las primeras figuras se muestra el código y el resultado de la generación del espacio. En las siguientes imágenes se puede ver la generación del trazado de la órbita, donde se representa el recorrido seguido por el satélite y se destaca su última posición. De este modo, se puede entender claramente cómo el programa construye el escenario y, a partir de este, dibuja tanto la órbita en 3D como su proyección en 2D sobre la superficie terrestre.
   
-3.CÁMARA OV2640 MINI INTEGRADA EN EL SATÉLITE  
+**3.CÁMARA OV2640 MINI INTEGRADA EN EL SATÉLITE**  
+
+Además, en la versión 4 del proyecto se ha integrado una cámara digital OV2640 mini en el satélite, con el objetivo de simular la captura de imágenes desde el espacio y su envío hacia la estación de tierra. Esta cámara está diseñada específicamente para sistemas embebidos y microcontroladores.  
+
+![Cámara](images/camara.png)  
+
+La cámara OV2640 es una cámara digital de tipo CMOS, es decir, dispone de un sensor formado por una matriz de píxeles capaces de captar la luz incidente. Cada píxel mide la intensidad de la luz que recibe y la convierte en una señal eléctrica.
+
+Una vez que la luz ha sido captada, la propia cámara se encarga de convertir estas señales eléctricas en valores digitales mediante circuitos internos de conversión analógica a digital. A partir de ahí, la cámara realiza un procesamiento interno de la imagen, que incluye ajustes básicos como el brillo, el contraste y la corrección del color. Todo este proceso se realiza dentro del módulo de la cámara, sin necesidad de que el Arduino intervenga.  
+
+![funcionamiento-camara](images/funcionamento_camara.png)  
+
+En el envío de la imagen, el satélite no transmite “una foto” como un objeto único, sino un flujo de bytes JPEG que debe transportarse de manera fiable a través de un canal con limitaciones (LoRa). Por este motivo, el sistema convierte la transmisión en un proceso controlado: la imagen se divide en paquetes pequeños y se utiliza un mecanismo de confirmación ACK (Stop-and-Wait) para asegurarse de que cada paquete llegue correctamente antes de enviar el siguiente. Esto es especialmente importante porque LoRa puede introducir interferencias, pérdidas o errores; y una sola corrupción podría hacer que el archivo JPEG final fuera inutilizable.
+
+A nivel conceptual, cada paquete lleva una identificación y un contenido que permiten reconstruir la imagen y verificar que no se ha corrompido durante el camino. En nuestro protocolo, cada paquete se puede describir como una estructura con cuatro elementos: Excel_Id (un código interno nuestro para indicar qué tipo de dato o mensaje es), Byte_Id (el ID/secuencia del paquete, para saber el orden), una parte de la imagen en HEX (los datos JPEG del fragmento), y CRC (el valor de verificación). La idea es que el receptor pueda saber “qué paquete es”, “qué contiene” y “si ha llegado bien”.
+
+El satélite captura una foto con la cámara OV2640 y la guarda temporalmente en la FIFO (tipo de memoria) interna de la cámara en formato JPEG. A partir de ahí, va leyendo la FIFO byte a byte hasta completar fragmentos pequeños (en vuestro caso, paquetes de tamaño fijo como 32 bytes, aunque el último paquete puede ser más corto). Además, el satélite no empieza a enviar cualquier cosa: primero busca dentro del flujo de bytes la marca de inicio de JPEG (“FF D8” en HEX). Cuando detecta esta secuencia, considera que la imagen ha comenzado y empieza a construir paquetes reales. Igualmente, cuando detecta la marca final (“FF D9” en HEX), sabe que el JPEG ha terminado y puede detener el envío. Este detalle es importante porque garantiza que el receptor reciba exactamente el archivo JPEG completo y no bytes sobrantes o “ruido” anterior/posterior.
+
+Una vez que el satélite tiene un fragmento (raw bytes), lo convierte a hexadecimal antes de enviarlo. Esta es una decisión práctica muy importante: los bytes de una imagen pueden contener valores que, si se enviaran como texto directo, podrían coincidir con caracteres especiales como saltos de línea \n, retorno de carro \r, u otros valores de control. Entonces, Python (o la lectura línea a línea por serie) podría interpretar erróneamente que un paquete ha terminado antes de tiempo o podría “romper” el mensaje en puntos incorrectos. En cambio, al pasar a HEX, cada byte se representa siempre con dos caracteres ASCII (0–9, A–F), es decir, un formato estable e imprimible que evita caracteres extraños. Además, este formato ayuda a depurar y a asegurar que el inicio y el final del JPEG (FF D8 / FF D9) se puedan detectar de forma fiable una vez que reconvertimos el HEX a bytes en el lado de Python.
+
+Para detectar errores, cada paquete incluye un CRC-8. En vuestro código, el “CRC” implementado es una versión simple basada en XOR acumulativo (a menudo se explica como un checksum XOR), pero el concepto funcional es el mismo: se calcula un valor corto a partir del contenido del paquete y se envía junto con los datos. Cuando el receptor recibe el paquete, vuelve a calcular este valor a partir de los datos recibidos y lo compara con el CRC enviado. Si coincide, se asume que el paquete ha llegado intacto; si no coincide, significa que se ha corrompido durante la transmisión y no debe aceptarse. La diferencia teórica entre checksum y CRC es que el checksum es una verificación más simple (por ejemplo, sumas o XOR) y el CRC es un método más robusto diseñado para detectar mejor errores típicos de comunicación, especialmente errores en ráfaga. En vuestro caso, utilizáis una verificación tipo “CRC-8 XOR” porque es muy eficiente para Arduino y ya aporta una detección de errores suficiente para hacer fiable el sistema cuando se combina con ACK y retransmisiones.
+
+Aquí entra el mecanismo clave del proyecto: Stop-and-Wait con ACK. El satélite envía un paquete con un Byte_Id concreto y se detiene, esperando una confirmación. Por otro lado, Python recibe el paquete (que le llega retransmitido por la estación terrestre vía LoRa), lo valida: primero comprueba que el HEX es correcto, luego lo convierte a bytes reales, y finalmente calcula el CRC y lo compara. Solo si el CRC es correcto, Python envía un mensaje de ACK con el mismo ID (ACK <id>). Cuando este ACK regresa al satélite (pasando también por la estación terrestre), el satélite interpreta que el paquete se ha recibido bien y entonces incrementa el packet_id y envía el siguiente fragmento. Si el satélite no recibe el ACK dentro de un tiempo (timeout), asume que el paquete se ha perdido o ha llegado mal y lo vuelve a enviar. Este comportamiento es exactamente lo que hace al sistema robusto ante interferencias: no avanzamos hasta que el receptor confirma, y si el canal falla, repetimos el paquete hasta que pase correctamente.
+
+En el lado de Python, además, hay una lógica adicional para reconstruir la imagen de manera segura. Python no da por comenzada la recepción hasta que detecta el inicio real del JPEG (FF D8) dentro de los datos decodificados. A partir de aquí, acumula los bytes recibidos en un buffer. Y cuando detecta el final del JPEG (FF D9) en cualquier posición del buffer, cierra el archivo y guarda la imagen completa. Este método es muy útil porque, incluso si hay paquetes que llegan con datos “extra” o si la sincronización no es perfecta al comienzo, el programa puede engancharse a las firmas reales del JPEG y asegurar que lo que se almacena es una imagen válida.
+
+Finalmente, cabe remarcar que entre Python y el satélite existe la estación terrestre conectada por LoRa, que en este montaje actúa principalmente como retransmisor: recibe los paquetes y los hace llegar al otro lado, y de igual manera hace regresar los ACK. Esto significa que la fiabilidad no depende solo del satélite o solo de Python, sino del ciclo completo satélite → LoRa → estación terrestre → PC y de vuelta. Precisamente por eso es tan importante el conjunto de decisiones del protocolo: paquetes con ID, datos en HEX, verificación CRC/checksum y ACK con reintentos.
+Un aspecto importante de la OV2640 es que incorpora compresión JPEG por hardware. Esto significa que la imagen final no se envía en formato bruto, sino como un archivo JPEG ya comprimido. Esta característica es clave en el proyecto, ya que reduce considerablemente el tamaño de la imagen y permite que el Arduino pueda gestionar el envío sin tener que realizar cálculos complejos.
 
 
