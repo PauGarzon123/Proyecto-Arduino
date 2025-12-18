@@ -502,7 +502,7 @@ def abrir_grafica_3d():
 
 def imagen_simulada():
     if not coords_3d:
-        print("❌ No hay coordenadas del satélite todavía")
+        print("No hay coordenadas del satélite todavía")
         return
 
     # ===============================
@@ -518,7 +518,7 @@ def imagen_simulada():
     x, y, z = coords_3d[-1]   # última posición
     lat, lon = xyz_to_latlon(x, y, z)
 
-    print(f"🌍 Lat={lat:.4f}, Lon={lon:.4f}")
+    print(f"Lat={lat:.4f}, Lon={lon:.4f}")
 
     # ===============================
     # CALCULAR TILE
@@ -540,7 +540,7 @@ def imagen_simulada():
     response = requests.get(tile_url)
 
     if response.status_code != 200:
-        print("❌ No existe imagen en este tile")
+        print("No existe imagen en este tile")
         return
 
     img = Image.open(io.BytesIO(response.content))
@@ -548,14 +548,14 @@ def imagen_simulada():
     # Tile vacío (PNG transparente)
     if img.mode == "RGBA":
         if all(p[3] == 0 for p in img.getdata()):
-            print("⚠ Tile vacío (sin datos)")
+            print("Tile vacío (sin datos)")
             return
 
     # ===============================
     # GUARDAR
     # ===============================
     img.save("planet_tile.png")
-    print("✔ Guardado como planet_tile.png")
+    print("Guardado como planet_tile.png")
 
     # ===============================
     # MOSTRAR EN TKINTER
@@ -566,7 +566,7 @@ def imagen_simulada():
 
 def mostrar_imagen_tk(img, lat, lon):
     top = Toplevel(window)
-    top.title("🛰 Imagen satelital (Planet)")
+    top.title("Imagen satelital (Planet)")
 
     img = img.resize((600, 600))
     foto = ImageTk.PhotoImage(img)
@@ -742,12 +742,12 @@ def pedir_imagen_real():
     global modo_imagen
 
     modo_imagen = True
-    print("📷 Sol·licitant imatge real...")
+    print("Solicitando imagen real...")
 
-    # 1️⃣ Enviar comanda al satèl·lit
+    #  Enviar comando al satélite
     mySerial.write(b"99:\n")
 
-    # 2️⃣ Rebre imatge (mateix codi que ja funciona)
+    # Recibir imagen
     buffer = bytearray()
     recibiendo = False
     esperado_pid = 0
@@ -800,7 +800,7 @@ def pedir_imagen_real():
                     recibiendo = True
                     buffer.clear()
                     buffer.extend(data[i:])
-                    print("🟢 FF D8 detectat (inici JPEG)")
+                    print("FF D8 detectado (inicio JPEG)")
                     break
         else:
             buffer.extend(data)
@@ -810,7 +810,7 @@ def pedir_imagen_real():
             jpeg = buffer[:idx+2]
             with open("foto.jpg", "wb") as f:
                 f.write(jpeg)
-            print("🔵 FF D9 detectat (fi JPEG)")
+            print("FF D9 detectado (fin JPEG)")
             break
 
         esperado_pid += 1
@@ -821,7 +821,7 @@ def pedir_imagen_real():
 
 def mostrar_imagen_real(ruta):
     img = Image.open(ruta)
-    img = img.resize((400, 300))  # ajusta si vols
+    img = img.resize((400, 300))  
     img_tk = ImageTk.PhotoImage(img)
 
     label_imagen.config(image=img_tk, text="")
@@ -945,7 +945,7 @@ def leer_datos_serial():
     - '9:X:Y:Z|111'      → posición
     """
     if modo_imagen:
-        return   # 🔴 NO llegir res durant imatge
+        return   
     
 
 
