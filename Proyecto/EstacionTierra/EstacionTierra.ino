@@ -40,18 +40,18 @@ void loop() {
 
     puertoPC.println(datos);
 
-    if (datos.startsWith("1:")) { 
+    if (datos.startsWith("1:")) { // led datos Temp/hum
       digitalWrite(LED_TH, HIGH); delay(20); digitalWrite(LED_TH, LOW); 
     }
-    else if (datos.startsWith("3:")) {
+    else if (datos.startsWith("3:")) {//led datos dist
       digitalWrite(LED_DIST, HIGH); delay(20); digitalWrite(LED_DIST, LOW);
     }
     else if (datos.startsWith("2:") ||
              datos.startsWith("4:") ||
-             datos.startsWith("10:")) {
+             datos.startsWith("10:")) {//leds error temp,hum,satelite
       digitalWrite(LED_ERROR, HIGH); delay(150); digitalWrite(LED_ERROR, LOW);
     }
-    else if (datos.startsWith("6:")) {
+    else if (datos.startsWith("6:")) {//error medias
       digitalWrite(LED_ALARMA, HIGH); delay(400); digitalWrite(LED_ALARMA, LOW);
     }
   }
@@ -65,10 +65,10 @@ void loop() {
 
     Serial.println(comando);
 
-    if (comando.startsWith("7:")) {
+    if (comando.startsWith("7:")) {//led modo rastreo
       digitalWrite(LED_RASTREO, HIGH);
     }
-    else if (comando.startsWith("8:")) {
+    else if (comando.startsWith("8:")) {//fin modo rastreo
       digitalWrite(LED_RASTREO, LOW);
     }
   }
